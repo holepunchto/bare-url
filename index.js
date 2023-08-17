@@ -4,7 +4,16 @@ const parse = require('./lib/parse')
 
 exports.URL = class URL {
   constructor (href, base) {
-    this._url = parse(href, base ? parse(base) : null)
+    if (typeof base === 'string') {
+      try {
+        base = new URL(base)
+      } catch (err) {
+        err.message = 'Invalid base URL'
+        throw err
+      }
+    }
+
+    this._url = parse(href, base ? base._url : null)
   }
 
   // https://url.spec.whatwg.org/#dom-url-protocol
