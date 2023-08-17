@@ -1,14 +1,14 @@
 # bare-url
 
-URL parser for Javascript
+URL parser for JavaScript.
 
 ```
-npm install bare-url
+npm i bare-url
 ```
 
 ## Usage
 
-``` js
+```js
 const url = require('bare-url')
 
 const p = url.fileURLToPath('file:///foo') // --> /foo

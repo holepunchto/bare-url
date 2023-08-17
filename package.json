@@ -1,23 +1,27 @@
 {
   "name": "bare-url",
   "version": "0.0.0",
-  "description": "URL parser for Javascript",
+  "description": "URL parser for JavaScript",
   "main": "index.js",
+  "files": [
+    "index.js",
+    "lib"
+  ],
   "scripts": {
-    "test": "standard && brittle test.js"
-  },
-  "devDependencies": {
-    "standard": "^17.1.0",
-    "brittle": "^3.3.2"
+    "test": "standard && bare test.js"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/holepunchto/bare-url.git"
+    "url": "git+https://github.com/holepunchto/bare-url.git"
   },
   "author": "Holepunch",
   "license": "Apache-2.0",
   "bugs": {
     "url": "https://github.com/holepunchto/bare-url/issues"
   },
-  "homepage": "https://github.com/holepunchto/bare-url"
+  "homepage": "https://github.com/holepunchto/bare-url",
+  "devDependencies": {
+    "brittle": "^3.3.2",
+    "standard": "^17.1.0"
+  }
 }
