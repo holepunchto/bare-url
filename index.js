@@ -1,8 +1,9 @@
 const path = require('path')
 const constants = require('./lib/constants')
+const errors = require('./lib/errors')
 const parse = require('./lib/parse')
 
-exports.URL = class URL {
+const URL = exports.URL = class URL {
   constructor (href, base) {
     if (typeof base === 'string') {
       try {
@@ -172,7 +173,22 @@ exports.URL = class URL {
   }
 }
 
-exports.fileURLToPath = function fileURLToPath (u) {
-  if (u.startsWith('file://')) u = u.slice(7)
-  return path.normalize(u)
+exports.fileURLToPath = function fileURLToPath (url) {
+  if (typeof url === 'string') {
+    url = new URL(url)
+  }
+
+  if (url.protocol !== 'file:') {
+    throw errors.INVALID_URL_SCHEME('The URL must use the file: protocol')
+  }
+
+  const pathname = path.normalize(decodeURIComponent(url.pathname))
+
+  if (process.platform === 'win32') {
+    if (url.hostname) return `\\\\${url.hostname}${pathname}`
+
+    return pathname.slice(1)
+  }
+
+  return pathname
 }
