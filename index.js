@@ -2,6 +2,7 @@ const path = require('path')
 const constants = require('./lib/constants')
 const errors = require('./lib/errors')
 const parse = require('./lib/parse')
+const serialize = require('./lib/serialize')
 
 const URL = exports.URL = class URL {
   constructor (href, base) {
@@ -15,6 +16,16 @@ const URL = exports.URL = class URL {
     }
 
     this._url = parse(href, base ? base._url : null)
+  }
+
+  // https://url.spec.whatwg.org/#dom-url-href
+
+  get href () {
+    return serialize(this._url)
+  }
+
+  set href (value) {
+    this._url = parse(value)
   }
 
   // https://url.spec.whatwg.org/#dom-url-protocol
