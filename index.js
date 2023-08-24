@@ -182,6 +182,23 @@ const URL = exports.URL = class URL {
 
     parse(value, null, this._url, constants.STATE_FRAGMENT)
   }
+
+  [Symbol.for('bare.inspect')] () {
+    return {
+      __proto__: { constructor: URL },
+
+      href: this.href,
+      protocol: this.protocol,
+      username: this.username,
+      password: this.password,
+      host: this.host,
+      hostname: this.hostname,
+      port: this.port,
+      pathname: this.pathname,
+      search: this.search,
+      hash: this.hash
+    }
+  }
 }
 
 exports.fileURLToPath = function fileURLToPath (url) {
