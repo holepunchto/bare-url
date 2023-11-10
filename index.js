@@ -1,4 +1,4 @@
-const path = require('path')
+const path = require('bare-path')
 const constants = require('./lib/constants')
 const errors = require('./lib/errors')
 const parse = require('./lib/parse')
