@@ -1,4 +1,5 @@
 const path = require('bare-path')
+const os = require('bare-os')
 const constants = require('./lib/constants')
 const errors = require('./lib/errors')
 const parse = require('./lib/parse')
@@ -212,7 +213,7 @@ exports.fileURLToPath = function fileURLToPath (url) {
 
   const pathname = path.normalize(decodeURIComponent(url.pathname))
 
-  if (process.platform === 'win32') {
+  if (os.platform() === 'win32') {
     if (url.hostname) return `\\\\${url.hostname}${pathname}`
 
     return pathname.slice(1)
