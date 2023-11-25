@@ -32,11 +32,11 @@ const URL = exports.URL = class URL {
   // https://url.spec.whatwg.org/#dom-url-protocol
 
   get protocol () {
-    return `${this._url.scheme}:`
+    return this._url.scheme + ':'
   }
 
   set protocol (value) {
-    parse(`${value}:`, null, this._url, constants.STATE_SCHEME_START)
+    parse(value + ':', null, this._url, constants.STATE_SCHEME_START)
   }
 
   // https://url.spec.whatwg.org/#dom-url-username
@@ -73,7 +73,7 @@ const URL = exports.URL = class URL {
     if (this._url.host === null) return ''
     if (this._url.port === null) return this._url.host
 
-    return `${this._url.host}:${this._url.port}`
+    return this._url.host + ':' + this._url.port
   }
 
   set host (value) {
@@ -101,7 +101,7 @@ const URL = exports.URL = class URL {
   get port () {
     if (this._url.port === null) return ''
 
-    return `${this._url.port}`
+    return this._url.port.toString(10)
   }
 
   set port (value) {
@@ -123,7 +123,7 @@ const URL = exports.URL = class URL {
 
     let output = ''
 
-    for (const segment of this._url.path) output += `/${segment}`
+    for (const segment of this._url.path) output += '/' + segment
 
     return output
   }
@@ -141,7 +141,7 @@ const URL = exports.URL = class URL {
   get search () {
     if (this._url.query === null || this._url.query === '') return ''
 
-    return `?${this._url.query}`
+    return '?' + this._url.query
   }
 
   set search (value) {
@@ -165,7 +165,7 @@ const URL = exports.URL = class URL {
   get hash () {
     if (this._url.fragment === null || this._url.fragment === '') return ''
 
-    return `#${this._url.fragment}`
+    return '#' + this._url.fragment
   }
 
   set hash (value) {
@@ -214,7 +214,7 @@ exports.fileURLToPath = function fileURLToPath (url) {
   const pathname = path.normalize(decodeURIComponent(url.pathname))
 
   if (os.platform() === 'win32') {
-    if (url.hostname) return `\\\\${url.hostname}${pathname}`
+    if (url.hostname) return '\\\\' + url.hostname + pathname
 
     return pathname.slice(1)
   }
