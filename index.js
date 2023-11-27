@@ -221,3 +221,27 @@ exports.fileURLToPath = function fileURLToPath (url) {
 
   return pathname
 }
+
+exports.pathToFileURL = function pathToFileURL (pathname) {
+  let resolved = path.resolve(pathname)
+
+  if (pathname[pathname.length - 1] === '/') {
+    resolved += '/'
+  } else if (os.platform() === 'win32' && pathname[pathname.length - 1 === '\\']) {
+    resolved += '/'
+  }
+
+  resolved = resolved
+    .replaceAll('%', '%25') // Must be first
+    .replaceAll('#', '%23')
+    .replaceAll('?', '%3f')
+    .replaceAll('\n', '%0a')
+    .replaceAll('\r', '%0d')
+    .replaceAll('\t', '%09')
+
+  if (os.platform() !== 'win32') {
+    resolved = resolved.replaceAll('\\', '%5c')
+  }
+
+  return new URL('file:' + resolved)
+}
