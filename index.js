@@ -71,9 +71,9 @@ const URL = exports.URL = class URL {
 
   get host () {
     if (this._url.host === null) return ''
-    if (this._url.port === null) return this._url.host
+    if (this._url.port === null) return serialize.host(this._url.host)
 
-    return this._url.host + ':' + this._url.port
+    return serialize.host(this._url.host) + ':' + this._url.port.toString(10)
   }
 
   set host (value) {
@@ -87,7 +87,7 @@ const URL = exports.URL = class URL {
   get hostname () {
     if (this._url.host === null) return ''
 
-    return this._url.host
+    return serialize.host(this._url.host)
   }
 
   set hostname (value) {
