@@ -228,7 +228,7 @@ exports.pathToFileURL = function pathToFileURL (pathname) {
   if (pathname[pathname.length - 1] === '/') {
     resolved += '/'
   } else if (os.platform() === 'win32' && pathname[pathname.length - 1 === '\\']) {
-    resolved += '/'
+    resolved += '\\'
   }
 
   resolved = resolved
