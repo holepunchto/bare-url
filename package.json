@@ -5,7 +5,15 @@
   "main": "index.js",
   "files": [
     "index.js",
-    "lib"
+    "binding.c",
+    "binding.js",
+    "CMakeLists.txt",
+    "lib",
+    "prebuilds",
+    "vendor/liburl/include",
+    "vendor/liburl/src",
+    "vendor/libutf/include",
+    "vendor/libutf/src"
   ],
   "scripts": {
     "test": "standard && bare test.js"
@@ -23,7 +31,7 @@
   "dependencies": {
     "bare-os": "^2.0.0",
     "bare-path": "^2.0.0",
-    "tr46": "^5.0.0"
+    "safety-catch": "^1.0.2"
   },
   "devDependencies": {
     "brittle": "^3.3.2",
