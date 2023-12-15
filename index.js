@@ -8,14 +8,9 @@ const URL = exports.URL = class URL {
   constructor (href, base) {
     if (typeof href !== 'string') throw errors.INVALID_URL()
 
-    if (typeof base === 'string') {
-      try {
-        base = new URL(base)
-      } catch (err) {
-        err.message = 'Invalid base URL'
-        throw err
-      }
-    }
+    if (base && typeof base !== 'string') base = base.href
+
+    this._components = new Uint32Array(8)
 
     this._parse(href, base)
   }
@@ -117,8 +112,6 @@ const URL = exports.URL = class URL {
   }
 
   set pathname (value) {
-    if (this._flags & binding.constants.HAS_OPAQUE_PATH) return
-
     if (value[0] !== '/' && value[0] !== '\\') {
       value = '/' + value
     }
@@ -171,13 +164,7 @@ const URL = exports.URL = class URL {
 
   _parse (href, base) {
     try {
-      const result = binding.parse(href, base ? base._handle : null)
-
-      this._handle = result.handle
-      this._flags = result.flags
-      this._type = result.type
-      this._href = result.href
-      this._components = result.components
+      this._href = binding.parse(href, base, this._components)
     } catch (err) {
       safetyCatch(err)
 

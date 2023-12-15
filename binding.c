@@ -3,6 +3,7 @@
 #include <js.h>
 #include <stddef.h>
 #include <stdlib.h>
+#include <string.h>
 #include <url.h>
 #include <utf.h>
 #include <utf/string.h>
@@ -11,13 +12,43 @@ static js_value_t *
 bare_url_parse (js_env_t *env, js_callback_info_t *info) {
   int err;
 
-  size_t argc = 2;
-  js_value_t *argv[2];
+  size_t argc = 3;
+  js_value_t *argv[3];
 
   err = js_get_callback_info(env, info, &argc, argv, NULL, NULL);
   assert(err == 0);
 
-  assert(argc == 2);
+  assert(argc == 3);
+
+  bool has_base;
+  err = js_is_string(env, argv[1], &has_base);
+  assert(err == 0);
+
+  url_t base;
+  url_init(&base);
+
+  if (has_base) {
+    size_t len;
+    err = js_get_value_string_utf8(env, argv[1], NULL, 0, &len);
+    assert(err == 0);
+
+    utf8_t *input = malloc(len);
+    err = js_get_value_string_utf8(env, argv[1], input, len, NULL);
+    assert(err == 0);
+
+    err = url_parse(&base, input, len, NULL);
+    if (err < 0) {
+      free(input);
+
+      url_destroy(&base);
+
+      js_throw_error(env, NULL, "Invalid base URL");
+
+      return NULL;
+    }
+
+    free(input);
+  }
 
   size_t len;
   err = js_get_value_string_utf8(env, argv[0], NULL, 0, &len);
@@ -27,30 +58,21 @@ bare_url_parse (js_env_t *env, js_callback_info_t *info) {
   err = js_get_value_string_utf8(env, argv[0], input, len, NULL);
   assert(err == 0);
 
-  bool has_base;
-  err = js_is_arraybuffer(env, argv[1], &has_base);
+  uint32_t *components;
+  err = js_get_typedarray_info(env, argv[2], NULL, (void **) &components, NULL, NULL, NULL);
   assert(err == 0);
-
-  url_t *base = NULL;
-
-  if (has_base) {
-    err = js_get_arraybuffer_info(env, argv[1], (void **) &base, NULL);
-    assert(err == 0);
-  }
 
   js_value_t *handle;
 
-  url_t *url;
-  err = js_create_arraybuffer(env, sizeof(url_t), (void **) &url, &handle);
-  assert(err == 0);
+  url_t url;
+  url_init(&url);
 
-  url_init(url);
-
-  err = url_parse(url, input, len, base);
+  err = url_parse(&url, input, len, has_base ? &base : NULL);
   if (err < 0) {
     free(input);
 
-    url_destroy(url);
+    url_destroy(&base);
+    url_destroy(&url);
 
     js_throw_error(env, NULL, "Invalid URL");
 
@@ -59,42 +81,15 @@ bare_url_parse (js_env_t *env, js_callback_info_t *info) {
 
   free(input);
 
-  js_value_t *result;
-  err = js_create_object(env, &result);
-  assert(err == 0);
-
-  err = js_set_named_property(env, result, "handle", handle);
-  assert(err == 0);
-
-  js_value_t *flags;
-  err = js_create_uint32(env, url->flags, &flags);
-  assert(err == 0);
-
-  err = js_set_named_property(env, result, "flags", flags);
-  assert(err == 0);
-
-  js_value_t *type;
-  err = js_create_uint32(env, url->type, &type);
-  assert(err == 0);
-
-  err = js_set_named_property(env, result, "type", type);
-  assert(err == 0);
-
   js_value_t *href;
-  err = js_create_string_utf8(env, url->href.data, url->href.len, &href);
+  err = js_create_string_utf8(env, url.href.data, url.href.len, &href);
   assert(err == 0);
 
-  err = js_set_named_property(env, result, "href", href);
-  assert(err == 0);
+  memcpy(components, &url.components, sizeof(url.components));
 
-  js_value_t *components;
-  err = js_create_typedarray(env, js_uint32_array, 8, handle, offsetof(url_t, components), &components);
-  assert(err == 0);
+  url_destroy(&url);
 
-  err = js_set_named_property(env, result, "components", components);
-  assert(err == 0);
-
-  return result;
+  return href;
 }
 
 static js_value_t *
@@ -107,22 +102,6 @@ init (js_env_t *env, js_value_t *exports) {
     assert(err == 0);
 
     err = js_set_named_property(env, exports, "parse", fn);
-    assert(err == 0);
-  }
-
-  js_value_t *constants;
-  err = js_create_object(env, &constants);
-  assert(err == 0);
-
-  err = js_set_named_property(env, exports, "constants", constants);
-  assert(err == 0);
-
-  {
-    js_value_t *val;
-    err = js_create_uint32(env, url_has_opaque_path, &val);
-    assert(err == 0);
-
-    err = js_set_named_property(env, constants, "HAS_OPAQUE_PATH", val);
     assert(err == 0);
   }
 
