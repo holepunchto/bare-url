@@ -15,13 +15,13 @@ endif()
 add_bare_module(bare_url)
 
 target_sources(
-  bare_url
+  ${bare_url}
   PRIVATE
     binding.c
 )
 
 target_link_libraries(
-  bare_url
+  ${bare_url}
   PUBLIC
     url_static
 )

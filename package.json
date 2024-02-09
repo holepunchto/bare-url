@@ -15,9 +15,7 @@
     "vendor/libutf/include",
     "vendor/libutf/src"
   ],
-  "addon": {
-    "target": "bare_url"
-  },
+  "addon": true,
   "scripts": {
     "test": "standard && bare test.js"
   },
