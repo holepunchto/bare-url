@@ -1,7 +1,9 @@
+/* global Bare */
 const test = require('brittle')
-const os = require('bare-os')
 const url = require('.')
 const URL = url.URL
+
+const isWindows = Bare.platform === 'win32'
 
 test('basic http: URL parse', (t) => {
   const url = new URL('http://user:pass@example.com:1234/foo/bar?baz#quux')
@@ -145,9 +147,9 @@ test('set file: URL path, empty', (t) => {
 })
 
 test('fileURLToPath', (t) => {
-  t.is(url.fileURLToPath('file:///foo/bar'), os.platform() === 'win32' ? '\\foo\\bar' : '/foo/bar')
+  t.is(url.fileURLToPath('file:///c:/foo/bar'), isWindows ? 'c:\\foo\\bar' : '/foo/bar')
 })
 
 test('pathToFileURL', (t) => {
-  t.is(url.pathToFileURL('/foo/bar').href, 'file:///foo/bar')
+  t.is(url.pathToFileURL(isWindows ? 'c:\\foo\\bar' : '/foo/bar').href, isWindows ? 'file:///c:/foo/bar' : 'file:///foo/bar')
 })

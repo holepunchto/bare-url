@@ -1,8 +1,10 @@
+/* global Bare */
 const path = require('bare-path')
-const os = require('bare-os')
 const safetyCatch = require('safety-catch')
 const binding = require('./binding')
 const errors = require('./lib/errors')
+
+const isWindows = Bare.platform === 'win32'
 
 const URL = exports.URL = class URL {
   constructor (href, base) {
@@ -195,10 +197,30 @@ exports.fileURLToPath = function fileURLToPath (url) {
     throw errors.INVALID_URL_SCHEME('The URL must use the file: protocol')
   }
 
+  if (isWindows) {
+    if (/%2f|%5c/i.test(url.pathname)) {
+      throw errors.INVALID_FILE_URL_PATH('The file: URL path must not include encoded \\ or / characters')
+    }
+  } else {
+    if (url.hostname) {
+      throw errors.INVALID_FILE_URL_HOST('The file: URL host must be \'localhost\' or empty')
+    }
+
+    if (/%2f/i.test(url.pathname)) {
+      throw errors.INVALID_FILE_URL_PATH('The file: URL path must not include encoded / characters')
+    }
+  }
+
   const pathname = path.normalize(decodeURIComponent(url.pathname))
 
-  if (os.platform() === 'win32') {
+  if (isWindows) {
     if (url.hostname) return '\\\\' + url.hostname + pathname
+
+    const letter = pathname.charCodeAt(1) | 0x20
+
+    if (letter < 0x61 /* a */ || letter > 0x7a /* z */ || pathname.charCodeAt(2) !== 0x3a /* : */) {
+      throw errors.INVALID_FILE_URL_PATH('The file: URL path must be absolute')
+    }
 
     return pathname.slice(1)
   }
@@ -211,7 +233,7 @@ exports.pathToFileURL = function pathToFileURL (pathname) {
 
   if (pathname[pathname.length - 1] === '/') {
     resolved += '/'
-  } else if (os.platform() === 'win32' && pathname[pathname.length - 1 === '\\']) {
+  } else if (isWindows && pathname[pathname.length - 1 === '\\']) {
     resolved += '\\'
   }
 
@@ -223,7 +245,7 @@ exports.pathToFileURL = function pathToFileURL (pathname) {
     .replaceAll('\r', '%0d')
     .replaceAll('\t', '%09')
 
-  if (os.platform() !== 'win32') {
+  if (!isWindows) {
     resolved = resolved.replaceAll('\\', '%5c')
   }
 
