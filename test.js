@@ -147,9 +147,17 @@ test('set file: URL path, empty', (t) => {
 })
 
 test('fileURLToPath', (t) => {
-  t.is(url.fileURLToPath('file:///c:/foo/bar'), isWindows ? 'c:\\foo\\bar' : '/foo/bar')
+  if (isWindows) {
+    t.is(url.fileURLToPath('file:///c:/foo/bar'), 'c:\\foo\\bar')
+  } else {
+    t.is(url.fileURLToPath('file:///foo/bar'), '/foo/bar')
+  }
 })
 
 test('pathToFileURL', (t) => {
-  t.is(url.pathToFileURL(isWindows ? 'c:\\foo\\bar' : '/foo/bar').href, isWindows ? 'file:///c:/foo/bar' : 'file:///foo/bar')
+  if (isWindows) {
+    t.is(url.pathToFileURL('c:\\foo\\bar').href, 'file:///c:/foo/bar')
+  } else {
+    t.is(url.pathToFileURL('/foo/bar').href, 'file:///foo/bar')
+  }
 })
