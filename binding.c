@@ -87,6 +87,7 @@ bare_url_parse (js_env_t *env, js_callback_info_t *info) {
 
   memcpy(components, &url.components, sizeof(url.components));
 
+  url_destroy(&base);
   url_destroy(&url);
 
   return href;
