@@ -87,6 +87,11 @@ const URL = exports.URL = class URL {
   }
 
   set host (value) {
+    if (hasOpaquePath(this)) {
+      return
+    }
+
+    this._update(this._replace(value, this._components[2], this._components[value.includes(':') ? 5 : 3]))
   }
 
   // https://url.spec.whatwg.org/#dom-url-hostname
@@ -96,6 +101,11 @@ const URL = exports.URL = class URL {
   }
 
   set hostname (value) {
+    if (hasOpaquePath(this)) {
+      return
+    }
+
+    this._update(this._replace(value, this._components[2], this._components[3]))
   }
 
   // https://url.spec.whatwg.org/#dom-url-port
@@ -105,6 +115,18 @@ const URL = exports.URL = class URL {
   }
 
   set port (value) {
+    if (cannotHaveCredentialsOrPort(this)) {
+      return
+    }
+
+    let start = this._components[3] + 1 /* : */
+
+    if (this.port === '') {
+      value = ':' + value
+      start--
+    }
+
+    this._update(this._replace(value, start, this._components[5]))
   }
 
   // https://url.spec.whatwg.org/#dom-url-pathname
@@ -189,6 +211,11 @@ const URL = exports.URL = class URL {
       safetyCatch(err)
     }
   }
+}
+
+// https://url.spec.whatwg.org/#url-opaque-path
+function hasOpaquePath (url) {
+  return url.pathname[0] !== '/'
 }
 
 // https://url.spec.whatwg.org/#cannot-have-a-username-password-port

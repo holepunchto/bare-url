@@ -92,6 +92,69 @@ test('set http: URL password, has username and password', (t) => {
   t.is(url.password, 'password')
 })
 
+test('set http: URL host without port', (t) => {
+  const url = new URL('http://example.com')
+
+  url.host = 'example.org'
+
+  t.comment(url.href)
+  t.is(url.host, 'example.org')
+})
+
+test('set http: URL host with port', (t) => {
+  const url = new URL('http://example.com')
+
+  url.host = 'example.org:1234'
+
+  t.comment(url.href)
+  t.is(url.host, 'example.org:1234')
+})
+
+test('set http: URL host without port, has port', (t) => {
+  const url = new URL('http://example.com:1234')
+
+  url.host = 'example.org'
+
+  t.comment(url.href)
+  t.is(url.host, 'example.org:1234')
+})
+
+test('set http: URL host with port, has port', (t) => {
+  const url = new URL('http://example.com:1234')
+
+  url.host = 'example.org:5678'
+
+  t.comment(url.href)
+  t.is(url.host, 'example.org:5678')
+})
+
+test('set http: URL port', (t) => {
+  const url = new URL('http://example.com')
+
+  url.port = '1234'
+
+  t.comment(url.href)
+  t.is(url.port, '1234')
+})
+
+test('set http: URL port, has port', (t) => {
+  const url = new URL('http://example.com:1234')
+
+  url.port = '5678'
+
+  t.comment(url.href)
+  t.is(url.port, '5678')
+})
+
+test('set http: URL empty port, has port', (t) => {
+  const url = new URL('http://example.com:1234')
+
+  url.port = ''
+
+  t.comment(url.href)
+  t.is(url.port, '')
+})
+
 test('set http: URL path', (t) => {
   const url = new URL('http://example.com')
 
