@@ -1,6 +1,6 @@
 # bare-url
 
-URL parser for JavaScript.
+WHATWG URL implementation for JavaScript.
 
 ```
 npm i bare-url

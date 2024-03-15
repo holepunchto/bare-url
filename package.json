@@ -1,7 +1,7 @@
 {
   "name": "bare-url",
   "version": "1.0.9",
-  "description": "URL parser for JavaScript",
+  "description": "WHATWG URL implementation for JavaScript",
   "main": "index.js",
   "files": [
     "index.js",
