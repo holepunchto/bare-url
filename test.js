@@ -173,7 +173,7 @@ test('set http: URL path, has path', (t) => {
   t.is(url.pathname, '/baz/quux')
 })
 
-test('set http: URL path, no leading slash', (t) => {
+test('set http: URL path, no leading /', (t) => {
   const url = new URL('http://example.com/foo/bar')
 
   url.pathname = 'baz/quux'
@@ -207,6 +207,78 @@ test('set file: URL path, empty', (t) => {
 
   t.comment(url.href)
   t.is(url.pathname, '/')
+})
+
+test('set http: URL search', (t) => {
+  const url = new URL('http://example.com')
+
+  url.search = '?foo'
+
+  t.comment(url.href)
+  t.is(url.search, '?foo')
+})
+
+test('set http: URL search, no leading ?', (t) => {
+  const url = new URL('http://example.com')
+
+  url.search = 'foo'
+
+  t.comment(url.href)
+  t.is(url.search, '?foo')
+})
+
+test('set http: URL search, has search', (t) => {
+  const url = new URL('http://example.com/?foo')
+
+  url.search = '?bar'
+
+  t.comment(url.href)
+  t.is(url.search, '?bar')
+})
+
+test('set http: URL search, has hash', (t) => {
+  const url = new URL('http://example.com/#foo')
+
+  url.search = '?bar'
+
+  t.comment(url.href)
+  t.is(url.search, '?bar')
+})
+
+test('set http: URL search, has search and hash', (t) => {
+  const url = new URL('http://example.com/?foo#bar')
+
+  url.search = '?baz'
+
+  t.comment(url.href)
+  t.is(url.search, '?baz')
+})
+
+test('set http: URL hash', (t) => {
+  const url = new URL('http://example.com')
+
+  url.hash = '#foo'
+
+  t.comment(url.href)
+  t.is(url.hash, '#foo')
+})
+
+test('set http: URL hash, no leading #', (t) => {
+  const url = new URL('http://example.com')
+
+  url.hash = 'foo'
+
+  t.comment(url.href)
+  t.is(url.hash, '#foo')
+})
+
+test('set http: URL hash, has hash', (t) => {
+  const url = new URL('http://example.com/#foo')
+
+  url.hash = '#bar'
+
+  t.comment(url.href)
+  t.is(url.hash, '#bar')
 })
 
 test('toString', (t) => {

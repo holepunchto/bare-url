@@ -136,6 +136,10 @@ const URL = exports.URL = class URL {
   }
 
   set pathname (value) {
+    if (hasOpaquePath(this)) {
+      return
+    }
+
     if (value[0] !== '/' && value[0] !== '\\') {
       value = '/' + value
     }
@@ -150,6 +154,9 @@ const URL = exports.URL = class URL {
   }
 
   set search (value) {
+    if (value[0] !== '?') value = '?' + value
+
+    this._update(this._replace(value, this._components[6] - 1 /* ? */, this._components[7] - 1 /* # */))
   }
 
   // https://url.spec.whatwg.org/#dom-url-hash
@@ -159,6 +166,9 @@ const URL = exports.URL = class URL {
   }
 
   set hash (value) {
+    if (value[0] !== '#') value = '#' + value
+
+    this._update(this._replace(value, this._components[7] - 1 /* # */))
   }
 
   toString () {
@@ -186,11 +196,11 @@ const URL = exports.URL = class URL {
     }
   }
 
-  _slice (start, end) {
+  _slice (start, end = this._href.length) {
     return this._href.slice(start, end)
   }
 
-  _replace (replacement, start, end) {
+  _replace (replacement, start, end = this._href.length) {
     return this._slice(0, start) + replacement + this._slice(end)
   }
 
