@@ -139,6 +139,14 @@ const URL = exports.URL = class URL {
   set hash (value) {
   }
 
+  toString () {
+    return this._href
+  }
+
+  toJSON () {
+    return this._href
+  }
+
   [Symbol.for('bare.inspect')] () {
     return {
       __proto__: { constructor: URL },

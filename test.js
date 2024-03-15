@@ -146,6 +146,18 @@ test('set file: URL path, empty', (t) => {
   t.is(url.pathname, '/')
 })
 
+test('toString', (t) => {
+  const url = new URL('file:///foo/bar')
+
+  t.is(`${url}`, 'file:///foo/bar')
+})
+
+test('toJSON', (t) => {
+  const url = new URL('file:///foo/bar')
+
+  t.is(JSON.stringify(url), '"file:///foo/bar"')
+})
+
 test('fileURLToPath', (t) => {
   if (isWindows) {
     t.is(url.fileURLToPath('file:///c:/foo/bar'), 'c:\\foo\\bar')
