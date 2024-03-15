@@ -154,7 +154,7 @@ const URL = exports.URL = class URL {
   }
 
   set search (value) {
-    if (value[0] !== '?') value = '?' + value
+    if (value && value[0] !== '?') value = '?' + value
 
     this._update(this._replace(value, this._components[6] - 1 /* ? */, this._components[7] - 1 /* # */))
   }
@@ -166,7 +166,7 @@ const URL = exports.URL = class URL {
   }
 
   set hash (value) {
-    if (value[0] !== '#') value = '#' + value
+    if (value && value[0] !== '#') value = '#' + value
 
     this._update(this._replace(value, this._components[7] - 1 /* # */))
   }

@@ -146,7 +146,7 @@ test('set http: URL port, has port', (t) => {
   t.is(url.port, '5678')
 })
 
-test('set http: URL empty port, has port', (t) => {
+test('set http: URL port, empty', (t) => {
   const url = new URL('http://example.com:1234')
 
   url.port = ''
@@ -254,6 +254,15 @@ test('set http: URL search, has search and hash', (t) => {
   t.is(url.search, '?baz')
 })
 
+test('set http: URL search, empty', (t) => {
+  const url = new URL('http://example.com/?foo')
+
+  url.search = ''
+
+  t.comment(url.href)
+  t.is(url.search, '')
+})
+
 test('set http: URL hash', (t) => {
   const url = new URL('http://example.com')
 
@@ -279,6 +288,15 @@ test('set http: URL hash, has hash', (t) => {
 
   t.comment(url.href)
   t.is(url.hash, '#bar')
+})
+
+test('set http: URL hash, empty', (t) => {
+  const url = new URL('http://example.com/#foo')
+
+  url.hash = ''
+
+  t.comment(url.href)
+  t.is(url.hash, '')
 })
 
 test('toString', (t) => {
