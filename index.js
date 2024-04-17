@@ -206,7 +206,7 @@ const URL = exports.URL = class URL {
 
   _parse (href, base) {
     try {
-      this._href = binding.parse(href, base, this._components)
+      this._href = binding.parse(String(href), base ? String(base) : null, this._components)
     } catch (err) {
       safetyCatch(err)
 
@@ -231,6 +231,14 @@ function hasOpaquePath (url) {
 // https://url.spec.whatwg.org/#cannot-have-a-username-password-port
 function cannotHaveCredentialsOrPort (url) {
   return url.hostname === '' || url.protocol === 'file:'
+}
+
+exports.isURL = function isURL (value) {
+  return value instanceof URL
+}
+
+exports.canParse = function canParse (href, base) {
+  return binding.canParse(String(href), base ? String(base) : null)
 }
 
 exports.fileURLToPath = function fileURLToPath (url) {

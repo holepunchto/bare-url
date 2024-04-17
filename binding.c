@@ -37,17 +37,16 @@ bare_url_parse (js_env_t *env, js_callback_info_t *info) {
     assert(err == 0);
 
     err = url_parse(&base, input, len, NULL);
-    if (err < 0) {
-      free(input);
 
+    free(input);
+
+    if (err < 0) {
       url_destroy(&base);
 
       js_throw_error(env, NULL, "Invalid base URL");
 
       return NULL;
     }
-
-    free(input);
   }
 
   size_t len;
@@ -68,9 +67,10 @@ bare_url_parse (js_env_t *env, js_callback_info_t *info) {
   url_init(&url);
 
   err = url_parse(&url, input, len, has_base ? &base : NULL);
-  if (err < 0) {
-    free(input);
 
+  free(input);
+
+  if (err < 0) {
     url_destroy(&base);
     url_destroy(&url);
 
@@ -78,8 +78,6 @@ bare_url_parse (js_env_t *env, js_callback_info_t *info) {
 
     return NULL;
   }
-
-  free(input);
 
   js_value_t *href;
   err = js_create_string_utf8(env, url.href.data, url.href.len, &href);
@@ -94,19 +92,91 @@ bare_url_parse (js_env_t *env, js_callback_info_t *info) {
 }
 
 static js_value_t *
-init (js_env_t *env, js_value_t *exports) {
+bare_url_can_parse (js_env_t *env, js_callback_info_t *info) {
   int err;
 
-  {
-    js_value_t *fn;
-    err = js_create_function(env, "parse", -1, bare_url_parse, NULL, &fn);
+  size_t argc = 2;
+  js_value_t *argv[2];
+
+  err = js_get_callback_info(env, info, &argc, argv, NULL, NULL);
+  assert(err == 0);
+
+  assert(argc == 2);
+
+  bool has_base;
+  err = js_is_string(env, argv[1], &has_base);
+  assert(err == 0);
+
+  url_t base;
+  url_init(&base);
+
+  if (has_base) {
+    size_t len;
+    err = js_get_value_string_utf8(env, argv[1], NULL, 0, &len);
     assert(err == 0);
 
-    err = js_set_named_property(env, exports, "parse", fn);
+    utf8_t *input = malloc(len);
+    err = js_get_value_string_utf8(env, argv[1], input, len, NULL);
     assert(err == 0);
+
+    err = url_parse(&base, input, len, NULL);
+
+    free(input);
+
+    if (err < 0) {
+      url_destroy(&base);
+
+      js_value_t *result;
+      err = js_get_boolean(env, false, &result);
+      assert(err == 0);
+
+      return result;
+    }
   }
+
+  size_t len;
+  err = js_get_value_string_utf8(env, argv[0], NULL, 0, &len);
+  assert(err == 0);
+
+  utf8_t *input = malloc(len);
+  err = js_get_value_string_utf8(env, argv[0], input, len, NULL);
+  assert(err == 0);
+
+  url_t url;
+  url_init(&url);
+
+  err = url_parse(&url, input, len, has_base ? &base : NULL);
+
+  free(input);
+
+  url_destroy(&base);
+  url_destroy(&url);
+
+  js_value_t *result;
+  err = js_get_boolean(env, err == 0, &result);
+  assert(err == 0);
+
+  return result;
+}
+
+static js_value_t *
+bare_url_exports (js_env_t *env, js_value_t *exports) {
+  int err;
+
+#define V(name, fn) \
+  { \
+    js_value_t *val; \
+    err = js_create_function(env, name, -1, fn, NULL, &val); \
+    assert(err == 0); \
+    err = js_set_named_property(env, exports, name, val); \
+    assert(err == 0); \
+  }
+
+  V("parse", bare_url_parse)
+  V("canParse", bare_url_can_parse)
+#undef V
 
   return exports;
 }
 
-BARE_MODULE(bare_url, init)
+BARE_MODULE(bare_url, bare_url_exports)
