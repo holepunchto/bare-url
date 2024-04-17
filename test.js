@@ -1,7 +1,6 @@
 /* global Bare */
 const test = require('brittle')
-const url = require('.')
-const URL = url.URL
+const URL = require('.')
 
 const isWindows = Bare.platform === 'win32'
 
@@ -311,18 +310,24 @@ test('toJSON', (t) => {
   t.is(JSON.stringify(url), '"file:///foo/bar"')
 })
 
+test('canParse', (t) => {
+  t.is(URL.canParse('https://example.org'), true)
+  t.is(URL.canParse('/foo/bar'), false)
+  t.is(URL.canParse('/foo/bar', 'https://example.org'), true)
+})
+
 test('fileURLToPath', (t) => {
   if (isWindows) {
-    t.is(url.fileURLToPath('file:///c:/foo/bar'), 'c:\\foo\\bar')
+    t.is(URL.fileURLToPath('file:///c:/foo/bar'), 'c:\\foo\\bar')
   } else {
-    t.is(url.fileURLToPath('file:///foo/bar'), '/foo/bar')
+    t.is(URL.fileURLToPath('file:///foo/bar'), '/foo/bar')
   }
 })
 
 test('pathToFileURL', (t) => {
   if (isWindows) {
-    t.is(url.pathToFileURL('c:\\foo\\bar').href, 'file:///c:/foo/bar')
+    t.is(URL.pathToFileURL('c:\\foo\\bar').href, 'file:///c:/foo/bar')
   } else {
-    t.is(url.pathToFileURL('/foo/bar').href, 'file:///foo/bar')
+    t.is(URL.pathToFileURL('/foo/bar').href, 'file:///foo/bar')
   }
 })

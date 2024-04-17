@@ -6,7 +6,7 @@ const errors = require('./lib/errors')
 
 const isWindows = Bare.platform === 'win32'
 
-const URL = exports.URL = class URL {
+const URL = module.exports = exports = class URL {
   constructor (href, base) {
     if (typeof href !== 'string') throw errors.INVALID_URL()
 
@@ -232,6 +232,8 @@ function hasOpaquePath (url) {
 function cannotHaveCredentialsOrPort (url) {
   return url.hostname === '' || url.protocol === 'file:'
 }
+
+exports.URL = exports // For Node.js compatibility
 
 exports.isURL = function isURL (value) {
   return value instanceof URL
