@@ -318,6 +318,10 @@ test('isURL', (t) => {
   t.absent(URL.isURL())
   t.absent(URL.isURL(null))
   t.absent(URL.isURL({}))
+
+  class MyURL extends URL {}
+
+  t.ok(URL.isURL(new MyURL('https://example.org')))
 })
 
 test('canParse', (t) => {

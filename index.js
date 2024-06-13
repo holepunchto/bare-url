@@ -7,6 +7,10 @@ const errors = require('./lib/errors')
 const isWindows = Bare.platform === 'win32'
 
 const URL = module.exports = exports = class URL {
+  static {
+    binding.tag(this)
+  }
+
   constructor (href, base) {
     if (typeof href !== 'string') throw errors.INVALID_URL()
 
@@ -14,7 +18,7 @@ const URL = module.exports = exports = class URL {
 
     this._components = new Uint32Array(8)
 
-    this._parse(href, base, true /* Tag */)
+    this._parse(href, base)
   }
 
   // https://url.spec.whatwg.org/#dom-url-href
@@ -204,9 +208,9 @@ const URL = module.exports = exports = class URL {
     return this._slice(0, start) + replacement + this._slice(end)
   }
 
-  _parse (href, base, tag = false) {
+  _parse (href, base) {
     try {
-      this._href = binding.parse(String(href), base ? String(base) : null, tag, this, this._components)
+      this._href = binding.parse(String(href), base ? String(base) : null, this._components)
     } catch (err) {
       safetyCatch(err)
 
@@ -216,7 +220,7 @@ const URL = module.exports = exports = class URL {
 
   _update (href) {
     try {
-      this._parse(href, null, false /* Tag */)
+      this._parse(href, null)
     } catch (err) {
       safetyCatch(err)
     }
@@ -236,7 +240,17 @@ function cannotHaveCredentialsOrPort (url) {
 exports.URL = exports // For Node.js compatibility
 
 exports.isURL = function isURL (value) {
-  return typeof value === 'object' && value !== null && binding.isURL(value)
+  if (typeof value !== 'object' || value === null) return false
+
+  let constructor = value.constructor
+
+  while (typeof constructor === 'function') {
+    if (binding.isTagged(constructor)) return true
+
+    constructor = Reflect.getPrototypeOf(constructor)
+  }
+
+  return false
 }
 
 exports.canParse = function canParse (href, base) {

@@ -14,13 +14,13 @@ static js_value_t *
 bare_url_parse (js_env_t *env, js_callback_info_t *info) {
   int err;
 
-  size_t argc = 5;
-  js_value_t *argv[5];
+  size_t argc = 3;
+  js_value_t *argv[3];
 
   err = js_get_callback_info(env, info, &argc, argv, NULL, NULL);
   assert(err == 0);
 
-  assert(argc == 5);
+  assert(argc == 3);
 
   bool has_base;
   err = js_is_string(env, argv[1], &has_base);
@@ -81,17 +81,8 @@ bare_url_parse (js_env_t *env, js_callback_info_t *info) {
   err = js_create_string_utf8(env, url.href.data, url.href.len, &href);
   assert(err == 0);
 
-  bool tag;
-  err = js_get_value_bool(env, argv[2], &tag);
-  assert(err == 0);
-
-  if (tag) {
-    err = js_add_type_tag(env, argv[3], &bare_url__tag);
-    assert(err == 0);
-  }
-
   uint32_t *components;
-  err = js_get_typedarray_info(env, argv[4], NULL, (void **) &components, NULL, NULL, NULL);
+  err = js_get_typedarray_info(env, argv[2], NULL, (void **) &components, NULL, NULL, NULL);
   assert(err == 0);
 
   memcpy(components, &url.components, sizeof(url.components));
@@ -171,7 +162,25 @@ bare_url_can_parse (js_env_t *env, js_callback_info_t *info) {
 }
 
 static js_value_t *
-bare_url_is_url (js_env_t *env, js_callback_info_t *info) {
+bare_url_tag (js_env_t *env, js_callback_info_t *info) {
+  int err;
+
+  size_t argc = 1;
+  js_value_t *argv[1];
+
+  err = js_get_callback_info(env, info, &argc, argv, NULL, NULL);
+  assert(err == 0);
+
+  assert(argc == 1);
+
+  err = js_add_type_tag(env, argv[0], &bare_url__tag);
+  assert(err == 0);
+
+  return NULL;
+}
+
+static js_value_t *
+bare_url_is_tagged (js_env_t *env, js_callback_info_t *info) {
   int err;
 
   size_t argc = 1;
@@ -208,7 +217,8 @@ bare_url_exports (js_env_t *env, js_value_t *exports) {
 
   V("parse", bare_url_parse)
   V("canParse", bare_url_can_parse)
-  V("isURL", bare_url_is_url)
+  V("tag", bare_url_tag)
+  V("isTagged", bare_url_is_tagged)
 #undef V
 
   return exports;
