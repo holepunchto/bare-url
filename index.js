@@ -14,7 +14,7 @@ const URL = module.exports = exports = class URL {
 
     this._components = new Uint32Array(8)
 
-    this._parse(href, base)
+    this._parse(href, base, true /* Tag */)
   }
 
   // https://url.spec.whatwg.org/#dom-url-href
@@ -204,9 +204,9 @@ const URL = module.exports = exports = class URL {
     return this._slice(0, start) + replacement + this._slice(end)
   }
 
-  _parse (href, base) {
+  _parse (href, base, tag = false) {
     try {
-      this._href = binding.parse(String(href), base ? String(base) : null, this._components)
+      this._href = binding.parse(String(href), base ? String(base) : null, tag, this, this._components)
     } catch (err) {
       safetyCatch(err)
 
@@ -216,7 +216,7 @@ const URL = module.exports = exports = class URL {
 
   _update (href) {
     try {
-      this._parse(href, null)
+      this._parse(href, null, false /* Tag */)
     } catch (err) {
       safetyCatch(err)
     }
@@ -236,7 +236,7 @@ function cannotHaveCredentialsOrPort (url) {
 exports.URL = exports // For Node.js compatibility
 
 exports.isURL = function isURL (value) {
-  return value instanceof URL
+  return typeof value === 'object' && value !== null && binding.isURL(value)
 }
 
 exports.canParse = function canParse (href, base) {

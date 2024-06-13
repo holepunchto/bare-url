@@ -8,17 +8,19 @@
 #include <utf.h>
 #include <utf/string.h>
 
+static js_type_tag_t bare_url__tag = {0x6f1fd92f476698b0, 0x93b59c349143ee50};
+
 static js_value_t *
 bare_url_parse (js_env_t *env, js_callback_info_t *info) {
   int err;
 
-  size_t argc = 3;
-  js_value_t *argv[3];
+  size_t argc = 5;
+  js_value_t *argv[5];
 
   err = js_get_callback_info(env, info, &argc, argv, NULL, NULL);
   assert(err == 0);
 
-  assert(argc == 3);
+  assert(argc == 5);
 
   bool has_base;
   err = js_is_string(env, argv[1], &has_base);
@@ -57,10 +59,6 @@ bare_url_parse (js_env_t *env, js_callback_info_t *info) {
   err = js_get_value_string_utf8(env, argv[0], input, len, NULL);
   assert(err == 0);
 
-  uint32_t *components;
-  err = js_get_typedarray_info(env, argv[2], NULL, (void **) &components, NULL, NULL, NULL);
-  assert(err == 0);
-
   js_value_t *handle;
 
   url_t url;
@@ -81,6 +79,19 @@ bare_url_parse (js_env_t *env, js_callback_info_t *info) {
 
   js_value_t *href;
   err = js_create_string_utf8(env, url.href.data, url.href.len, &href);
+  assert(err == 0);
+
+  bool tag;
+  err = js_get_value_bool(env, argv[2], &tag);
+  assert(err == 0);
+
+  if (tag) {
+    err = js_add_type_tag(env, argv[3], &bare_url__tag);
+    assert(err == 0);
+  }
+
+  uint32_t *components;
+  err = js_get_typedarray_info(env, argv[4], NULL, (void **) &components, NULL, NULL, NULL);
   assert(err == 0);
 
   memcpy(components, &url.components, sizeof(url.components));
@@ -160,6 +171,29 @@ bare_url_can_parse (js_env_t *env, js_callback_info_t *info) {
 }
 
 static js_value_t *
+bare_url_is_url (js_env_t *env, js_callback_info_t *info) {
+  int err;
+
+  size_t argc = 1;
+  js_value_t *argv[1];
+
+  err = js_get_callback_info(env, info, &argc, argv, NULL, NULL);
+  assert(err == 0);
+
+  assert(argc == 1);
+
+  bool is_url;
+  err = js_check_type_tag(env, argv[0], &bare_url__tag, &is_url);
+  assert(err == 0);
+
+  js_value_t *result;
+  err = js_get_boolean(env, is_url, &result);
+  assert(err == 0);
+
+  return result;
+}
+
+static js_value_t *
 bare_url_exports (js_env_t *env, js_value_t *exports) {
   int err;
 
@@ -174,6 +208,7 @@ bare_url_exports (js_env_t *env, js_value_t *exports) {
 
   V("parse", bare_url_parse)
   V("canParse", bare_url_can_parse)
+  V("isURL", bare_url_is_url)
 #undef V
 
   return exports;

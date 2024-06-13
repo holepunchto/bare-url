@@ -310,6 +310,16 @@ test('toJSON', (t) => {
   t.is(JSON.stringify(url), '"file:///foo/bar"')
 })
 
+test('isURL', (t) => {
+  t.ok(URL.isURL(new URL('https://example.org')))
+
+  t.absent(URL.isURL('https://example.org'))
+
+  t.absent(URL.isURL())
+  t.absent(URL.isURL(null))
+  t.absent(URL.isURL({}))
+})
+
 test('canParse', (t) => {
   t.is(URL.canParse('https://example.org'), true)
   t.is(URL.canParse('/foo/bar'), false)
