@@ -14,13 +14,17 @@ static js_value_t *
 bare_url_parse (js_env_t *env, js_callback_info_t *info) {
   int err;
 
-  size_t argc = 3;
-  js_value_t *argv[3];
+  size_t argc = 4;
+  js_value_t *argv[4];
 
   err = js_get_callback_info(env, info, &argc, argv, NULL, NULL);
   assert(err == 0);
 
-  assert(argc == 3);
+  assert(argc == 4);
+
+  bool should_throw;
+  err = js_get_value_bool(env, argv[3], &should_throw);
+  assert(err == 0);
 
   bool has_base;
   err = js_is_string(env, argv[1], &has_base);
@@ -45,7 +49,7 @@ bare_url_parse (js_env_t *env, js_callback_info_t *info) {
     if (err < 0) {
       url_destroy(&base);
 
-      js_throw_error(env, NULL, "Invalid base URL");
+      if (should_throw) js_throw_error(env, NULL, "Invalid base URL");
 
       return NULL;
     }
@@ -72,7 +76,7 @@ bare_url_parse (js_env_t *env, js_callback_info_t *info) {
     url_destroy(&base);
     url_destroy(&url);
 
-    js_throw_error(env, NULL, "Invalid URL");
+    if (should_throw) js_throw_error(env, NULL, "Invalid URL");
 
     return NULL;
   }

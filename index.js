@@ -11,14 +11,16 @@ const URL = module.exports = exports = class URL {
     binding.tag(this)
   }
 
-  constructor (href, base) {
-    if (typeof href !== 'string') throw errors.INVALID_URL()
+  constructor (input, base, opts = {}) {
+    if (arguments.length === 0) throw errors.INVALID_URL()
 
-    if (base && typeof base !== 'string') base = base.href
+    input = `${input}`
+
+    if (base !== undefined) base = `${base}`
 
     this._components = new Uint32Array(8)
 
-    this._parse(href, base)
+    this._parse(input, base, opts.throw !== false)
   }
 
   // https://url.spec.whatwg.org/#dom-url-href
@@ -208,9 +210,9 @@ const URL = module.exports = exports = class URL {
     return this._slice(0, start) + replacement + this._slice(end)
   }
 
-  _parse (href, base) {
+  _parse (href, base, shouldThrow) {
     try {
-      this._href = binding.parse(String(href), base ? String(base) : null, this._components)
+      this._href = binding.parse(String(href), base ? String(base) : null, this._components, shouldThrow)
     } catch (err) {
       safetyCatch(err)
 
@@ -220,7 +222,7 @@ const URL = module.exports = exports = class URL {
 
   _update (href) {
     try {
-      this._parse(href, null)
+      this._parse(href, null, true)
     } catch (err) {
       safetyCatch(err)
     }
@@ -253,8 +255,13 @@ exports.isURL = function isURL (value) {
   return false
 }
 
-exports.canParse = function canParse (href, base) {
-  return binding.canParse(String(href), base ? String(base) : null)
+exports.parse = function parse (input, base) {
+  const url = new URL(input, base, { throw: false })
+  return url.href ? url : null
+}
+
+exports.canParse = function canParse (input, base) {
+  return binding.canParse(String(input), base ? String(base) : null)
 }
 
 exports.fileURLToPath = function fileURLToPath (url) {
