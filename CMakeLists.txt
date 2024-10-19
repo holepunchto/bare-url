@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.25)
 
-project(bare_url C)
+find_package(cmake-bare REQUIRED PATHS node_modules/cmake-bare)
 
-include(bare)
+project(bare_url C)
 
 if(NOT TARGET utf)
   add_subdirectory(vendor/libutf EXCLUDE_FROM_ALL)
@@ -16,6 +16,8 @@ add_bare_module(bare_url)
 
 target_sources(
   ${bare_url}
+  PUBLIC
+    $<TARGET_OBJECTS:url>
   PRIVATE
     binding.c
 )
@@ -23,5 +25,5 @@ target_sources(
 target_link_libraries(
   ${bare_url}
   PUBLIC
-    url_static
+    url
 )
