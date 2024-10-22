@@ -1,6 +1,6 @@
 {
   "name": "bare-url",
-  "version": "2.0.4",
+  "version": "2.0.5",
   "description": "WHATWG URL implementation for JavaScript",
   "main": "index.js",
   "files": [
