@@ -30,8 +30,7 @@
   },
   "homepage": "https://github.com/holepunchto/bare-url",
   "dependencies": {
-    "bare-path": "^3.0.0",
-    "safety-catch": "^1.0.2"
+    "bare-path": "^3.0.0"
   },
   "devDependencies": {
     "brittle": "^3.3.2",

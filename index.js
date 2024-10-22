@@ -1,6 +1,5 @@
 /* global Bare */
 const path = require('bare-path')
-const safetyCatch = require('safety-catch')
 const binding = require('./binding')
 const errors = require('./lib/errors')
 
@@ -214,7 +213,7 @@ const URL = module.exports = exports = class URL {
     try {
       this._href = binding.parse(String(href), base ? String(base) : null, this._components, shouldThrow)
     } catch (err) {
-      safetyCatch(err)
+      if (err instanceof TypeError) throw err
 
       throw errors.INVALID_URL()
     }
@@ -224,7 +223,7 @@ const URL = module.exports = exports = class URL {
     try {
       this._parse(href, null, true)
     } catch (err) {
-      safetyCatch(err)
+      if (err instanceof TypeError) throw err
     }
   }
 }
