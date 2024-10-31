@@ -16,8 +16,6 @@ add_bare_module(bare_url)
 
 target_sources(
   ${bare_url}
-  PUBLIC
-    $<TARGET_OBJECTS:url>
   PRIVATE
     binding.c
 )
