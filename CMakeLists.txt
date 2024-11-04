@@ -22,6 +22,8 @@ target_sources(
 
 target_link_libraries(
   ${bare_url}
+  PRIVATE
+    $<TARGET_OBJECTS:url>
   PUBLIC
     url
 )
