@@ -1,8 +1,0 @@
-[submodule "vendor/liburl"]
-	path = vendor/liburl
-	url = ../../holepunchto/liburl.git
-	shallow = true
-[submodule "vendor/libutf"]
-	path = vendor/libutf
-	url = ../../holepunchto/libutf.git
-	shallow = true
