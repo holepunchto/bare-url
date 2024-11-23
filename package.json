@@ -2,9 +2,14 @@
   "name": "bare-url",
   "version": "2.0.9",
   "description": "WHATWG URL implementation for JavaScript",
-  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./package": "./package.json",
+    "./global": "./global.js"
+  },
   "files": [
     "index.js",
+    "global.js",
     "binding.c",
     "binding.js",
     "CMakeLists.txt",
