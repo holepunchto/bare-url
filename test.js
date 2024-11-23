@@ -327,7 +327,10 @@ test('isURL', (t) => {
 test('parse', (t) => {
   t.alike(URL.parse('https://example.org'), new URL('https://example.org'))
   t.is(URL.parse('/foo/bar'), null)
-  t.alike(URL.parse('/foo/bar', 'https://example.org'), new URL('https://example.org/foo/bar'))
+  t.alike(
+    URL.parse('/foo/bar', 'https://example.org'),
+    new URL('https://example.org/foo/bar')
+  )
 })
 
 test('canParse', (t) => {

@@ -5,12 +5,12 @@ const errors = require('./lib/errors')
 
 const isWindows = Bare.platform === 'win32'
 
-const URL = module.exports = exports = class URL {
+module.exports = exports = class URL {
   static {
     binding.tag(this)
   }
 
-  constructor (input, base, opts = {}) {
+  constructor(input, base, opts = {}) {
     if (arguments.length === 0) throw errors.INVALID_URL()
 
     input = `${input}`
@@ -24,47 +24,58 @@ const URL = module.exports = exports = class URL {
 
   // https://url.spec.whatwg.org/#dom-url-href
 
-  get href () {
+  get href() {
     return this._href
   }
 
-  set href (value) {
+  set href(value) {
     this._update(value)
   }
 
   // https://url.spec.whatwg.org/#dom-url-protocol
 
-  get protocol () {
+  get protocol() {
     return this._slice(0, this._components[0]) + ':'
   }
 
-  set protocol (value) {
-    this._update(this._replace(value.replace(/:+$/, ''), 0, this._components[0]))
+  set protocol(value) {
+    this._update(
+      this._replace(value.replace(/:+$/, ''), 0, this._components[0])
+    )
   }
 
   // https://url.spec.whatwg.org/#dom-url-username
 
-  get username () {
+  get username() {
     return this._slice(this._components[0] + 3 /* :// */, this._components[1])
   }
 
-  set username (value) {
+  set username(value) {
     if (cannotHaveCredentialsOrPort(this)) {
       return
     }
 
     if (this.username === '') value += '@'
 
-    this._update(this._replace(value, this._components[0] + 3 /* :// */, this._components[1]))
+    this._update(
+      this._replace(
+        value,
+        this._components[0] + 3 /* :// */,
+        this._components[1]
+      )
+    )
   }
 
   // https://url.spec.whatwg.org/#dom-url-password
 
-  get password () {
-    return this._href.slice(this._components[1] + 1 /* : */, this._components[2] - 1 /* @ */)
+  get password() {
+    return this._href.slice(
+      this._components[1] + 1 /* : */,
+      this._components[2] - 1 /* @ */
+    )
   }
 
-  set password (value) {
+  set password(value) {
     if (cannotHaveCredentialsOrPort(this)) {
       return
     }
@@ -87,25 +98,31 @@ const URL = module.exports = exports = class URL {
 
   // https://url.spec.whatwg.org/#dom-url-host
 
-  get host () {
+  get host() {
     return this._slice(this._components[2], this._components[5])
   }
 
-  set host (value) {
+  set host(value) {
     if (hasOpaquePath(this)) {
       return
     }
 
-    this._update(this._replace(value, this._components[2], this._components[value.includes(':') ? 5 : 3]))
+    this._update(
+      this._replace(
+        value,
+        this._components[2],
+        this._components[value.includes(':') ? 5 : 3]
+      )
+    )
   }
 
   // https://url.spec.whatwg.org/#dom-url-hostname
 
-  get hostname () {
+  get hostname() {
     return this._slice(this._components[2], this._components[3])
   }
 
-  set hostname (value) {
+  set hostname(value) {
     if (hasOpaquePath(this)) {
       return
     }
@@ -115,11 +132,11 @@ const URL = module.exports = exports = class URL {
 
   // https://url.spec.whatwg.org/#dom-url-port
 
-  get port () {
+  get port() {
     return this._slice(this._components[3] + 1 /* : */, this._components[5])
   }
 
-  set port (value) {
+  set port(value) {
     if (cannotHaveCredentialsOrPort(this)) {
       return
     }
@@ -136,11 +153,11 @@ const URL = module.exports = exports = class URL {
 
   // https://url.spec.whatwg.org/#dom-url-pathname
 
-  get pathname () {
+  get pathname() {
     return this._slice(this._components[5], this._components[6] - 1 /* ? */)
   }
 
-  set pathname (value) {
+  set pathname(value) {
     if (hasOpaquePath(this)) {
       return
     }
@@ -149,42 +166,53 @@ const URL = module.exports = exports = class URL {
       value = '/' + value
     }
 
-    this._update(this._replace(value, this._components[5], this._components[6] - 1 /* ? */))
+    this._update(
+      this._replace(value, this._components[5], this._components[6] - 1 /* ? */)
+    )
   }
 
   // https://url.spec.whatwg.org/#dom-url-search
 
-  get search () {
-    return this._slice(this._components[6] - 1 /* ? */, this._components[7] - 1 /* # */)
+  get search() {
+    return this._slice(
+      this._components[6] - 1 /* ? */,
+      this._components[7] - 1 /* # */
+    )
   }
 
-  set search (value) {
+  set search(value) {
     if (value && value[0] !== '?') value = '?' + value
 
-    this._update(this._replace(value, this._components[6] - 1 /* ? */, this._components[7] - 1 /* # */))
+    this._update(
+      this._replace(
+        value,
+        this._components[6] - 1 /* ? */,
+        this._components[7] - 1 /* # */
+      )
+    )
   }
 
   // https://url.spec.whatwg.org/#dom-url-hash
 
-  get hash () {
+  get hash() {
     return this._slice(this._components[7] - 1 /* # */)
   }
 
-  set hash (value) {
+  set hash(value) {
     if (value && value[0] !== '#') value = '#' + value
 
     this._update(this._replace(value, this._components[7] - 1 /* # */))
   }
 
-  toString () {
+  toString() {
     return this._href
   }
 
-  toJSON () {
+  toJSON() {
     return this._href
   }
 
-  [Symbol.for('bare.inspect')] () {
+  [Symbol.for('bare.inspect')]() {
     return {
       __proto__: { constructor: URL },
 
@@ -201,17 +229,22 @@ const URL = module.exports = exports = class URL {
     }
   }
 
-  _slice (start, end = this._href.length) {
+  _slice(start, end = this._href.length) {
     return this._href.slice(start, end)
   }
 
-  _replace (replacement, start, end = this._href.length) {
+  _replace(replacement, start, end = this._href.length) {
     return this._slice(0, start) + replacement + this._slice(end)
   }
 
-  _parse (href, base, shouldThrow) {
+  _parse(href, base, shouldThrow) {
     try {
-      this._href = binding.parse(String(href), base ? String(base) : null, this._components, shouldThrow)
+      this._href = binding.parse(
+        String(href),
+        base ? String(base) : null,
+        this._components,
+        shouldThrow
+      )
     } catch (err) {
       if (err instanceof TypeError) throw err
 
@@ -219,7 +252,7 @@ const URL = module.exports = exports = class URL {
     }
   }
 
-  _update (href) {
+  _update(href) {
     try {
       this._parse(href, null, true)
     } catch (err) {
@@ -229,18 +262,20 @@ const URL = module.exports = exports = class URL {
 }
 
 // https://url.spec.whatwg.org/#url-opaque-path
-function hasOpaquePath (url) {
+function hasOpaquePath(url) {
   return url.pathname[0] !== '/'
 }
 
 // https://url.spec.whatwg.org/#cannot-have-a-username-password-port
-function cannotHaveCredentialsOrPort (url) {
+function cannotHaveCredentialsOrPort(url) {
   return url.hostname === '' || url.protocol === 'file:'
 }
 
-exports.URL = exports // For Node.js compatibility
+const URL = exports
 
-exports.isURL = function isURL (value) {
+exports.URL = URL // For Node.js compatibility
+
+exports.isURL = function isURL(value) {
   if (typeof value !== 'object' || value === null) return false
 
   let constructor = value.constructor
@@ -254,16 +289,16 @@ exports.isURL = function isURL (value) {
   return false
 }
 
-exports.parse = function parse (input, base) {
+exports.parse = function parse(input, base) {
   const url = new URL(input, base, { throw: false })
   return url.href ? url : null
 }
 
-exports.canParse = function canParse (input, base) {
+exports.canParse = function canParse(input, base) {
   return binding.canParse(String(input), base ? String(base) : null)
 }
 
-exports.fileURLToPath = function fileURLToPath (url) {
+exports.fileURLToPath = function fileURLToPath(url) {
   if (typeof url === 'string') {
     url = new URL(url)
   }
@@ -274,15 +309,21 @@ exports.fileURLToPath = function fileURLToPath (url) {
 
   if (isWindows) {
     if (/%2f|%5c/i.test(url.pathname)) {
-      throw errors.INVALID_FILE_URL_PATH('The file: URL path must not include encoded \\ or / characters')
+      throw errors.INVALID_FILE_URL_PATH(
+        'The file: URL path must not include encoded \\ or / characters'
+      )
     }
   } else {
     if (url.hostname) {
-      throw errors.INVALID_FILE_URL_HOST('The file: URL host must be \'localhost\' or empty')
+      throw errors.INVALID_FILE_URL_HOST(
+        "The file: URL host must be 'localhost' or empty"
+      )
     }
 
     if (/%2f/i.test(url.pathname)) {
-      throw errors.INVALID_FILE_URL_PATH('The file: URL path must not include encoded / characters')
+      throw errors.INVALID_FILE_URL_PATH(
+        'The file: URL path must not include encoded / characters'
+      )
     }
   }
 
@@ -293,7 +334,11 @@ exports.fileURLToPath = function fileURLToPath (url) {
 
     const letter = pathname.charCodeAt(1) | 0x20
 
-    if (letter < 0x61 /* a */ || letter > 0x7a /* z */ || pathname.charCodeAt(2) !== 0x3a /* : */) {
+    if (
+      letter < 0x61 /* a */ ||
+      letter > 0x7a /* z */ ||
+      pathname.charCodeAt(2) !== 0x3a /* : */
+    ) {
       throw errors.INVALID_FILE_URL_PATH('The file: URL path must be absolute')
     }
 
@@ -303,7 +348,7 @@ exports.fileURLToPath = function fileURLToPath (url) {
   return pathname
 }
 
-exports.pathToFileURL = function pathToFileURL (pathname) {
+exports.pathToFileURL = function pathToFileURL(pathname) {
   let resolved = path.resolve(pathname)
 
   if (pathname[pathname.length - 1] === '/') {
