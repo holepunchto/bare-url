@@ -1,6 +1,6 @@
 {
   "name": "bare-url",
-  "version": "2.0.9",
+  "version": "2.1.0",
   "description": "WHATWG URL implementation for JavaScript",
   "exports": {
     ".": "./index.js",
