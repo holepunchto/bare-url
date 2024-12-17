@@ -3,12 +3,16 @@
   "version": "2.1.0",
   "description": "WHATWG URL implementation for JavaScript",
   "exports": {
-    ".": "./index.js",
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./index.js"
+    },
     "./package": "./package.json",
     "./global": "./global.js"
   },
   "files": [
     "index.js",
+    "index.d.ts",
     "global.js",
     "binding.c",
     "binding.js",
