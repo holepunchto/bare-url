@@ -1,8 +1,6 @@
 declare class URL {
   constructor(input: string, base?: string, opts?: { throw?: boolean })
 
-  static URL: typeof URL
-
   href: string
   protocol: string
   username: string
@@ -28,6 +26,8 @@ declare namespace URL {
   export function fileURLToPath(url: URL | string): string
 
   export function pathToFileURL(pathname: string): URL
+
+  export { URL }
 }
 
 export = URL
