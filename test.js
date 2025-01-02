@@ -337,6 +337,7 @@ test('canParse', (t) => {
   t.is(URL.canParse('https://example.org'), true)
   t.is(URL.canParse('/foo/bar'), false)
   t.is(URL.canParse('/foo/bar', 'https://example.org'), true)
+  t.is(URL.canParse('/foo/bar', new URL('https://example.org')), true)
 })
 
 test('fileURLToPath', (t) => {
