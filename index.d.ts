@@ -1,5 +1,5 @@
 declare class URL {
-  constructor(input: string, base?: string, opts?: { throw?: boolean })
+  constructor(input: string, base?: string | URL)
 
   href: string
   protocol: string
@@ -19,9 +19,9 @@ declare class URL {
 declare namespace URL {
   export function isURL(value: unknown): value is URL
 
-  export function parse(input: string, base?: string): URL | null
+  export function parse(input: string, base?: string | URL): URL | null
 
-  export function canParse(input: string, base?: string): boolean
+  export function canParse(input: string, base?: string | URL): boolean
 
   export function fileURLToPath(url: URL | string): string
 
