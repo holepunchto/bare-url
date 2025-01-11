@@ -353,7 +353,7 @@ exports.pathToFileURL = function pathToFileURL(pathname) {
 
   if (pathname[pathname.length - 1] === '/') {
     resolved += '/'
-  } else if (isWindows && pathname[pathname.length - 1 === '\\']) {
+  } else if (isWindows && pathname[pathname.length - 1] === '\\') {
     resolved += '\\'
   }
 
