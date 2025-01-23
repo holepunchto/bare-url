@@ -1,7 +1,9 @@
 import * as url from '.'
 
-declare global {
-  interface URL extends url.URL {}
+type URLConstructor = typeof url.URL
 
-  class URL extends url.URL {}
+declare global {
+  type URL = url.URL
+
+  const URL: URLConstructor
 }
