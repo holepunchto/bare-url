@@ -3,11 +3,11 @@
   "version": "2.1.2",
   "description": "WHATWG URL implementation for JavaScript",
   "exports": {
+    "./package": "./package.json",
     ".": {
       "types": "./index.d.ts",
       "default": "./index.js"
     },
-    "./package": "./package.json",
     "./global": {
       "types": "./global.d.ts",
       "default": "./global.js"

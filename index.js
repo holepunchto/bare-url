@@ -1,4 +1,3 @@
-/* global Bare */
 const path = require('bare-path')
 const binding = require('./binding')
 const errors = require('./lib/errors')
@@ -274,6 +273,8 @@ function cannotHaveCredentialsOrPort(url) {
 const URL = exports
 
 exports.URL = URL // For Node.js compatibility
+
+exports.errors = errors
 
 exports.isURL = function isURL(value) {
   if (typeof value !== 'object' || value === null) return false

@@ -1,3 +1,5 @@
+import URLError from './lib/errors'
+
 interface URL {
   href: string
   protocol: string
@@ -29,7 +31,7 @@ declare namespace URL {
 
   export function pathToFileURL(pathname: string): URL
 
-  export { URL }
+  export { URL, type URLError, URLError as errors }
 }
 
 export = URL
