@@ -1,6 +1,4 @@
-declare class URL {
-  constructor(input: string, base?: string | URL)
-
+interface URL {
   href: string
   protocol: string
   username: string
@@ -14,6 +12,10 @@ declare class URL {
 
   toString(): string
   toJSON(): string
+}
+
+declare class URL {
+  constructor(input: string, base?: string | URL)
 }
 
 declare namespace URL {
