@@ -8,6 +8,7 @@ test('basic http: URL parse', (t) => {
   const url = new URL('http://user:pass@example.com:1234/foo/bar?baz#quux')
 
   t.is(url.href, 'http://user:pass@example.com:1234/foo/bar?baz#quux')
+  t.is(url.origin, 'http://example.com:1234')
   t.is(url.protocol, 'http:')
   t.is(url.username, 'user')
   t.is(url.password, 'pass')

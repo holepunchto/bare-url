@@ -1,6 +1,8 @@
 import URLError from './lib/errors'
 
 interface URL {
+  readonly origin: string
+
   href: string
   protocol: string
   username: string

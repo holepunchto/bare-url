@@ -31,6 +31,15 @@ module.exports = exports = class URL {
     this._update(value)
   }
 
+  // https://url.spec.whatwg.org/#dom-url-origin
+
+  get origin() {
+    return (
+      this._slice(0, this._components[0] + 3 /* :// */, this._components[1]) +
+      this.host
+    )
+  }
+
   // https://url.spec.whatwg.org/#dom-url-protocol
 
   get protocol() {
