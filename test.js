@@ -322,6 +322,10 @@ test('isURL', (t) => {
   class MyURL extends URL {}
 
   t.ok(URL.isURL(new MyURL('https://example.org')))
+
+  // Enable when global.URL is updated
+  // t.unlike(URL, global.URL)
+  // t.ok(URL.isURL(new global.URL('https://example.org')))
 })
 
 test('parse', (t) => {
