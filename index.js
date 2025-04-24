@@ -277,6 +277,7 @@ exports.URL = URL // For Node.js compatibility
 exports.errors = errors
 
 exports.isURL = function isURL(value) {
+  if (value instanceof URL) return true
   if (typeof value !== 'object' || value === null) return false
 
   let constructor = value.constructor
