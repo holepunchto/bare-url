@@ -7,6 +7,7 @@ const isWindows = Bare.platform === 'win32'
 test('basic http: URL parse', (t) => {
   const url = new URL('http://user:pass@example.com:1234/foo/bar?baz#quux')
 
+  t.comment(url)
   t.is(url.href, 'http://user:pass@example.com:1234/foo/bar?baz#quux')
   t.is(url.protocol, 'http:')
   t.is(url.username, 'user')
