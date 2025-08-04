@@ -289,6 +289,7 @@ function cannotHaveCredentialsOrPort(url) {
 const URL = exports
 
 exports.URL = URL // For Node.js compatibility
+exports.URLSearchParams = URLSearchParams
 
 exports.errors = errors
 
