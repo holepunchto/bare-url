@@ -1,6 +1,5 @@
-/* global Bare */
 const test = require('brittle')
-const URL = require('.')
+const { URL, URLSearchParams } = require('.')
 
 const isWindows = Bare.platform === 'win32'
 
@@ -216,6 +215,7 @@ test('set http: URL search', (t) => {
 
   t.comment(url.href)
   t.is(url.search, '?foo')
+  t.alike(url.searchParams, new URLSearchParams('foo'))
 })
 
 test('set http: URL search, no leading ?', (t) => {
@@ -225,6 +225,7 @@ test('set http: URL search, no leading ?', (t) => {
 
   t.comment(url.href)
   t.is(url.search, '?foo')
+  t.alike(url.searchParams, new URLSearchParams('foo'))
 })
 
 test('set http: URL search, has search', (t) => {
@@ -234,6 +235,7 @@ test('set http: URL search, has search', (t) => {
 
   t.comment(url.href)
   t.is(url.search, '?bar')
+  t.alike(url.searchParams, new URLSearchParams('bar'))
 })
 
 test('set http: URL search, has hash', (t) => {
@@ -243,6 +245,7 @@ test('set http: URL search, has hash', (t) => {
 
   t.comment(url.href)
   t.is(url.search, '?bar')
+  t.alike(url.searchParams, new URLSearchParams('bar'))
 })
 
 test('set http: URL search, has search and hash', (t) => {
@@ -252,6 +255,7 @@ test('set http: URL search, has search and hash', (t) => {
 
   t.comment(url.href)
   t.is(url.search, '?baz')
+  t.alike(url.searchParams, new URLSearchParams('baz'))
 })
 
 test('set http: URL search, empty', (t) => {
@@ -261,6 +265,7 @@ test('set http: URL search, empty', (t) => {
 
   t.comment(url.href)
   t.is(url.search, '')
+  t.alike(url.searchParams, new URLSearchParams())
 })
 
 test('set http: URL hash', (t) => {
