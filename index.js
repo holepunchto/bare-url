@@ -15,9 +15,9 @@ module.exports = exports = class URL {
   constructor(input, base, opts = {}) {
     if (arguments.length === 0) throw errors.INVALID_URL()
 
-    input = `${input}`
+    input = String(input)
 
-    if (base !== undefined) base = `${base}`
+    if (base !== undefined) base = String(base)
 
     this._components = new Uint32Array(8)
 
