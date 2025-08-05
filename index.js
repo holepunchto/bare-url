@@ -1,6 +1,7 @@
 const path = require('bare-path')
 const binding = require('./binding')
 const errors = require('./lib/errors')
+const URLSearchParams = require('./lib/url-search-params')
 
 const kind = Symbol.for('bare.url.kind')
 
@@ -14,13 +15,15 @@ module.exports = exports = class URL {
   constructor(input, base, opts = {}) {
     if (arguments.length === 0) throw errors.INVALID_URL()
 
-    input = `${input}`
+    input = String(input)
 
-    if (base !== undefined) base = `${base}`
+    if (base !== undefined) base = String(base)
 
     this._components = new Uint32Array(8)
 
     this._parse(input, base, opts.throw !== false)
+
+    if (this._href) this._params = new URLSearchParams(this.search, this)
   }
 
   get [kind]() {
@@ -35,6 +38,8 @@ module.exports = exports = class URL {
 
   set href(value) {
     this._update(value)
+
+    this._params._parse(this.search)
   }
 
   // https://url.spec.whatwg.org/#dom-url-protocol
@@ -195,6 +200,14 @@ module.exports = exports = class URL {
         this._components[7] - 1 /* # */
       )
     )
+
+    this._params._parse(this.search)
+  }
+
+  // https://url.spec.whatwg.org/#dom-url-searchparams
+
+  get searchParams() {
+    return this._params
   }
 
   // https://url.spec.whatwg.org/#dom-url-hash
@@ -230,6 +243,7 @@ module.exports = exports = class URL {
       port: this.port,
       pathname: this.pathname,
       search: this.search,
+      searchParams: this.searchParams,
       hash: this.hash
     }
   }
@@ -242,10 +256,10 @@ module.exports = exports = class URL {
     return this._slice(0, start) + replacement + this._slice(end)
   }
 
-  _parse(href, base, shouldThrow) {
+  _parse(input, base, shouldThrow) {
     try {
       this._href = binding.parse(
-        String(href),
+        String(input),
         base ? String(base) : null,
         this._components,
         shouldThrow
@@ -257,9 +271,9 @@ module.exports = exports = class URL {
     }
   }
 
-  _update(href) {
+  _update(input) {
     try {
-      this._parse(href, null, true)
+      this._parse(input, null, true)
     } catch (err) {
       if (err instanceof TypeError) throw err
     }
@@ -278,7 +292,8 @@ function cannotHaveCredentialsOrPort(url) {
 
 const URL = exports
 
-exports.URL = URL // For Node.js compatibility
+exports.URL = URL
+exports.URLSearchParams = URLSearchParams
 
 exports.errors = errors
 
@@ -290,11 +305,13 @@ exports.isURL = function isURL(value) {
   )
 }
 
+// https://url.spec.whatwg.org/#dom-url-parse
 exports.parse = function parse(input, base) {
   const url = new URL(input, base, { throw: false })
-  return url.href ? url : null
+  return url._href ? url : null
 }
 
+// https://url.spec.whatwg.org/#dom-url-canparse
 exports.canParse = function canParse(input, base) {
   return binding.canParse(String(input), base ? String(base) : null)
 }
