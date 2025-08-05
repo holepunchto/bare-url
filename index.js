@@ -38,6 +38,8 @@ module.exports = exports = class URL {
 
   set href(value) {
     this._update(value)
+
+    this._params._parse(this.search)
   }
 
   // https://url.spec.whatwg.org/#dom-url-protocol
@@ -198,6 +200,8 @@ module.exports = exports = class URL {
         this._components[7] - 1 /* # */
       )
     )
+
+    this._params._parse(this.search)
   }
 
   // https://url.spec.whatwg.org/#dom-url-searchparams
