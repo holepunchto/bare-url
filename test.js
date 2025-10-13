@@ -364,3 +364,18 @@ test('pathToFileURL', (t) => {
     t.is(URL.pathToFileURL('/foo/bar').href, 'file:///foo/bar')
   }
 })
+
+test('format', (t) => {
+  t.is(
+    URL.format({
+      protocol: 'https',
+      hostname: 'example.com',
+      pathname: '/some/path',
+      query: {
+        page: 1,
+        format: 'json'
+      }
+    }),
+    'https://example.com/some/path?page=1&format=json'
+  )
+})

@@ -389,3 +389,62 @@ exports.pathToFileURL = function pathToFileURL(pathname) {
 
   return new URL('file:' + resolved)
 }
+
+exports.format = function format(parts) {
+  const {
+    protocol,
+    auth,
+    host,
+    hostname,
+    port,
+    pathname,
+    search,
+    query,
+    hash,
+    slashes
+  } = parts
+
+  let result = ''
+
+  if (typeof protocol === 'string') {
+    result += protocol
+
+    if (protocol[protocol.length - 1] !== ':') {
+      result += ':'
+    }
+
+    if (slashes === true || /https?|ftp|gopher|file/.test(protocol)) {
+      result += '//'
+    }
+  }
+
+  if (typeof auth === 'string') {
+    if (host || hostname) result += auth + '@'
+  }
+
+  if (typeof host === 'string') result += host
+  else {
+    result += hostname
+
+    if (port) result += ':' + port
+  }
+
+  if (typeof pathname === 'string' && pathname !== '') {
+    if (pathname[0] !== '/') result += '/'
+    result += pathname
+  }
+
+  if (typeof search === 'string') {
+    if (search[0] !== '?') result += '?'
+    result += search
+  } else if (typeof query === 'object' && query !== null) {
+    result += '?' + new URLSearchParams(query)
+  }
+
+  if (typeof hash === 'string') {
+    if (hash[0] !== '#') result += '#'
+    result += hash
+  }
+
+  return result
+}
