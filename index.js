@@ -267,7 +267,7 @@ module.exports = exports = class URL {
     } catch (err) {
       if (err instanceof TypeError) throw err
 
-      throw errors.INVALID_URL()
+      throw errors.INVALID_URL(`Invalid URL '${input}'`, input)
     }
   }
 
