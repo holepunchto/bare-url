@@ -304,6 +304,17 @@ test('set http: URL hash, empty', (t) => {
   t.is(url.hash, '')
 })
 
+test('invalid URL', (t) => {
+  try {
+    new URL('not-a-valid-url')
+
+    t.fail()
+  } catch (err) {
+    t.comment(err.message)
+    t.pass()
+  }
+})
+
 test('toString', (t) => {
   const url = new URL('file:///foo/bar')
 
