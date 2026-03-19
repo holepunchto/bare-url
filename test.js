@@ -344,6 +344,24 @@ test('isURL', (t) => {
   t.ok(URL.isURL(new global.URL('https://example.org')))
 })
 
+test('isURLSearchParams', (t) => {
+  t.ok(URL.isURLSearchParams(new URLSearchParams('foo')))
+
+  t.absent(URL.isURLSearchParams('foo'))
+
+  t.absent(URL.isURLSearchParams())
+  t.absent(URL.isURLSearchParams(null))
+  t.absent(URL.isURLSearchParams({}))
+
+  class MyURLSearchParams extends URLSearchParams {}
+
+  t.ok(URL.isURLSearchParams(new MyURLSearchParams('foo')))
+
+  // TODO Enable when Bare is updated
+  // t.unlike(URLSearchParams, global.URLSearchParams)
+  // t.ok(URL.isURLSearchParams(new global.URLSearchParams('foo')))
+})
+
 test('parse', (t) => {
   t.alike(URL.parse('https://example.org'), new URL('https://example.org'))
   t.is(URL.parse('/foo/bar'), null)
