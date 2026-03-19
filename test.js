@@ -357,9 +357,8 @@ test('isURLSearchParams', (t) => {
 
   t.ok(URL.isURLSearchParams(new MyURLSearchParams('foo')))
 
-  // TODO Enable when Bare is updated
-  // t.unlike(URLSearchParams, global.URLSearchParams)
-  // t.ok(URL.isURLSearchParams(new global.URLSearchParams('foo')))
+  t.unlike(URLSearchParams, global.URLSearchParams)
+  t.ok(URL.isURLSearchParams(new global.URLSearchParams('foo')))
 })
 
 test('parse', (t) => {
