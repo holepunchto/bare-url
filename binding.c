@@ -8,8 +8,6 @@
 #include <utf.h>
 #include <utf/string.h>
 
-static js_type_tag_t bare_url__tag = {0x6f1fd92f476698b0, 0x93b59c349143ee50};
-
 static js_value_t *
 bare_url_parse (js_env_t *env, js_callback_info_t *info) {
   int err;
