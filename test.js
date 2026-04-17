@@ -404,3 +404,21 @@ test('format', (t) => {
     'https://example.com/some/path?page=1&format=json'
   )
 })
+
+test("URLSearchParams parse decodes '+' as space", (t) => {
+  const params = new URLSearchParams('q=hello+world&k=a%2Bb')
+  t.is(params.get('q'), 'hello world')
+  t.is(params.get('k'), 'a+b')
+})
+
+test("URL.searchParams decodes '+' as space", (t) => {
+  const url = new URL('http://example.com/?q=hello+world')
+  t.is(url.searchParams.get('q'), 'hello world')
+})
+
+test("URLSearchParams round-trip preserves literal '+' in values", (t) => {
+  const params = new URLSearchParams()
+  params.set('v', 'a+b')
+  t.is(params.toString(), 'v=a%2Bb')
+  t.is(new URLSearchParams(params.toString()).get('v'), 'a+b')
+})
