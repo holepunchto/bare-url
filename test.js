@@ -304,6 +304,12 @@ test('set http: URL hash, empty', (t) => {
   t.is(url.hash, '')
 })
 
+test('+ in query string', (t) => {
+  const url = new URL('http://example.com/?foo=bar+baz')
+
+  t.is(url.searchParams.get('foo'), 'bar baz')
+})
+
 test('invalid URL', (t) => {
   try {
     new URL('not-a-valid-url')
