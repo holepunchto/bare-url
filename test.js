@@ -310,6 +310,10 @@ test('+ in query string', (t) => {
   t.is(url.searchParams.get('foo'), 'bar baz')
 })
 
+test('ipv6 with trailing ::', (t) => {
+  const url = new URL('http://[1:2:3:4:5:6:7::]/')
+})
+
 test('invalid URL', (t) => {
   try {
     new URL('not-a-valid-url')
