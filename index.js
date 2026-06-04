@@ -317,6 +317,10 @@ exports.fileURLToPath = function fileURLToPath(url) {
     }
   }
 
+  if (/%00/i.test(url.pathname)) {
+    throw errors.INVALID_FILE_URL_PATH('The file: URL path must not include encoded NUL characters')
+  }
+
   const pathname = path.normalize(decodeURIComponent(url.pathname))
 
   if (isWindows) {
