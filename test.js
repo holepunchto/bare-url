@@ -392,6 +392,15 @@ test('fileURLToPath', (t) => {
   }
 })
 
+test('fileURLToPath rejects encoded NUL', (t) => {
+  const prefix = isWindows ? 'file:///c:' : 'file://'
+
+  t.exception(() => URL.fileURLToPath(prefix + '/etc/passwd%00.png'), /INVALID_FILE_URL_PATH/)
+  t.exception(() => URL.fileURLToPath(prefix + '/foo%00bar'), /INVALID_FILE_URL_PATH/)
+  // Literal NUL is percent-encoded by the URL parser, so this exercises the same path
+  t.exception(() => URL.fileURLToPath(prefix + '/foo\x00bar'), /INVALID_FILE_URL_PATH/)
+})
+
 test('pathToFileURL', (t) => {
   if (isWindows) {
     t.is(URL.pathToFileURL('c:\\foo\\bar').href, 'file:///c:/foo/bar')
