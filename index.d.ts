@@ -19,7 +19,7 @@ interface URL {
 }
 
 declare class URL {
-  constructor(input: string, base?: string | URL)
+  constructor(input: string | URL, base?: string | URL)
 }
 
 declare namespace URL {
