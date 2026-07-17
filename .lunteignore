@@ -1,1 +1,3 @@
-lib/errors.d.ts
+# https://github.com/holepunchto/lunte/issues/17
+index.d.ts
+lib/url-search-params.d.ts
