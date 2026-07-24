@@ -5,8 +5,14 @@ find_package(cmake-fetch REQUIRED PATHS node_modules/cmake-fetch)
 
 project(bare_url C)
 
+set(CMAKE_C_VISIBILITY_PRESET hidden)
+set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
+
 fetch_package("github:holepunchto/libutf#f0d532e")
 fetch_package("github:holepunchto/liburl#2f0e4c1")
+
+unset(CMAKE_C_VISIBILITY_PRESET)
+unset(CMAKE_VISIBILITY_INLINES_HIDDEN)
 
 add_bare_module(bare_url)
 
