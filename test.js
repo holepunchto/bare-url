@@ -346,7 +346,7 @@ test('isURL', (t) => {
   t.absent(URL.isURL(null))
   t.absent(URL.isURL({}))
 
-  class MyURL extends URL { }
+  class MyURL extends URL {}
 
   t.ok(URL.isURL(new MyURL('https://example.org')))
 
@@ -363,7 +363,7 @@ test('isURLSearchParams', (t) => {
   t.absent(URL.isURLSearchParams(null))
   t.absent(URL.isURLSearchParams({}))
 
-  class MyURLSearchParams extends URLSearchParams { }
+  class MyURLSearchParams extends URLSearchParams {}
 
   t.ok(URL.isURLSearchParams(new MyURLSearchParams('foo')))
 
