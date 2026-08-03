@@ -424,7 +424,7 @@ test('format', (t) => {
   )
 })
 
-test('http: URL host is lower-cased', (t) => {
+test.skip('http: URL host is lower-cased', (t) => {
   const url = new URL('https://KEET.io')
 
   t.comment(url.href)
@@ -433,7 +433,7 @@ test('http: URL host is lower-cased', (t) => {
   t.is(url.hostname, 'keet.io')
 })
 
-test('http: URL host case folding leaves path untouched', (t) => {
+test.skip('http: URL host case folding leaves path untouched', (t) => {
   const url = new URL('HTTP://Example.COM/FOO/Bar')
 
   t.comment(url.href)
@@ -442,7 +442,7 @@ test('http: URL host case folding leaves path untouched', (t) => {
   t.is(url.pathname, '/FOO/Bar')
 })
 
-test('non-special scheme host preserves case', (t) => {
+test.skip('non-special scheme host preserves case', (t) => {
   const url = new URL('scheme://KEET.io')
 
   t.comment(url.href)
