@@ -423,3 +423,30 @@ test('format', (t) => {
     'https://example.com/some/path?page=1&format=json'
   )
 })
+
+// TODO: enable these tests when Bare will ship the latest bare-url
+test.skip('http: URL host is lower-cased', (t) => {
+  const url = new URL('https://KEET.io')
+
+  t.comment(url.href)
+  t.is(url.href, 'https://keet.io/')
+  t.is(url.host, 'keet.io')
+  t.is(url.hostname, 'keet.io')
+})
+
+test.skip('http: URL host case folding leaves path untouched', (t) => {
+  const url = new URL('HTTP://Example.COM/FOO/Bar')
+
+  t.comment(url.href)
+  t.is(url.protocol, 'http:')
+  t.is(url.host, 'example.com')
+  t.is(url.pathname, '/FOO/Bar')
+})
+
+test.skip('non-special scheme host preserves case', (t) => {
+  const url = new URL('scheme://KEET.io')
+
+  t.comment(url.href)
+  t.is(url.host, 'KEET.io')
+  t.is(url.hostname, 'KEET.io')
+})
