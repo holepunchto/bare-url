@@ -24,148 +24,289 @@ To register `URL` and `URLSearchParams` as globals:
 require('bare-url/global')
 ```
 
+<!-- bare-refgen:api start -->
+
 ## API
 
-#### `const url = new URL(input[, base])`
+### Constructing and parsing
 
-Parse `input` as a URL. If `base` is provided, `input` is resolved relative to `base`. Throws if `input` is not a valid URL.
+#### `new URL(input: string, base?: string | URL)`
 
-#### `url.href`
+Parse `input` as a URL. If `base` is provided, `input` is resolved relative to `base`.
 
-The full serialized URL string. Setting this property reparses the URL.
+**Parameters**
 
-#### `url.protocol`
+| Parameter | Type            | Default | Description                                                   |
+| --------- | --------------- | ------- | ------------------------------------------------------------- |
+| `input`   | `string`        | —       | The URL string to parse.                                      |
+| `base?`   | `string \| URL` | —       | A base URL that `input` is resolved relative to, if provided. |
 
-The URL scheme followed by `':'`, e.g. `'https:'`.
+**Throws**
 
-#### `url.username`
+- `INVALID_URL` — `input` is not a valid URL.
 
-The username portion of the URL, or an empty string.
+#### `URL.parse(input: string, base?: string | URL): URL | null`
 
-#### `url.password`
+Parse `input` as a URL without throwing.
 
-The password portion of the URL, or an empty string.
+**Parameters**
 
-#### `url.host`
+| Parameter | Type            | Default | Description                                                   |
+| --------- | --------------- | ------- | ------------------------------------------------------------- |
+| `input`   | `string`        | —       | The URL string to parse.                                      |
+| `base?`   | `string \| URL` | —       | A base URL that `input` is resolved relative to, if provided. |
 
-The hostname and port, e.g. `'example.com:8080'`.
+**Returns** `URL | null` — A `URL` instance if `input` parses successfully, or `null` on failure.
 
-#### `url.hostname`
-
-The hostname without the port.
-
-#### `url.port`
-
-The port as a string, or an empty string if not present.
-
-#### `url.pathname`
-
-The path portion of the URL.
-
-#### `url.search`
-
-The query string including the leading `'?'`, or an empty string.
-
-#### `url.searchParams`
-
-A `URLSearchParams` object for the query string. Mutations to the params are reflected in the URL.
-
-#### `url.hash`
-
-The fragment including the leading `'#'`, or an empty string.
-
-#### `url.toString()`
-
-Returns the serialized URL string. Equivalent to `url.href`.
-
-#### `url.toJSON()`
-
-Returns the serialized URL string. Suitable for JSON serialization.
-
-#### `const params = new URLSearchParams([init])`
-
-Create a new `URLSearchParams` instance. `init` may be a query string, an iterable of `[name, value]` pairs, or an object of key-value pairs.
-
-#### `params.size`
-
-The total number of search parameters.
-
-#### `params.append(name, value)`
-
-Append a new `name`/`value` pair.
-
-#### `params.delete(name[, value])`
-
-Remove all pairs with `name`. If `value` is provided, only pairs with both the matching `name` and `value` are removed.
-
-#### `params.get(name)`
-
-Return the first value for `name`, or `null` if not present.
-
-#### `params.getAll(name)`
-
-Return all values for `name` as an array.
-
-#### `params.has(name[, value])`
-
-Return `true` if a pair with `name` exists. If `value` is provided, the pair must also match `value`.
-
-#### `params.set(name, value)`
-
-Set the value for `name`, replacing any existing pairs with that name.
-
-#### `params.toString()`
-
-Return the serialized query string without the leading `'?'`.
-
-#### `params.toJSON()`
-
-Return the parameters as an array of `[name, value]` pairs.
-
-#### `URL.isURL(value)`
-
-Return `true` if `value` is a `URL` instance.
-
-#### `URLSearchParams.isURLSearchParams(value)`
-
-Return `true` if `value` is a `URLSearchParams` instance.
-
-#### `const url = URL.parse(input[, base])`
-
-Parse `input` as a URL without throwing. Returns a `URL` instance on success, or `null` on failure.
-
-#### `const valid = URL.canParse(input[, base])`
+#### `URL.canParse(input: string, base?: string | URL): boolean`
 
 Return `true` if `input` can be parsed as a valid URL, optionally relative to `base`.
 
-#### `const pathname = URL.fileURLToPath(url)`
+**Parameters**
 
-Convert a `file:` URL to a platform-specific file path. `url` may be a `URL` instance or a string. Throws if the URL does not use the `file:` protocol or contains invalid path characters.
+| Parameter | Type            | Default | Description                                                   |
+| --------- | --------------- | ------- | ------------------------------------------------------------- |
+| `input`   | `string`        | —       | The URL string to test.                                       |
+| `base?`   | `string \| URL` | —       | A base URL that `input` is resolved relative to, if provided. |
 
-#### `const url = URL.pathToFileURL(pathname)`
+### Components
+
+#### `href: string`
+
+The full serialized URL string. Setting this property reparses the URL.
+
+#### `protocol: string`
+
+The URL scheme followed by `':'`, e.g. `'https:'`.
+
+#### `username: string`
+
+The username portion of the URL, or an empty string.
+
+#### `password: string`
+
+The password portion of the URL, or an empty string.
+
+#### `host: string`
+
+The hostname and port, e.g. `'example.com:8080'`.
+
+#### `hostname: string`
+
+The hostname without the port.
+
+#### `port: string`
+
+The port as a string, or an empty string if not present.
+
+#### `pathname: string`
+
+The path portion of the URL.
+
+#### `search: string`
+
+The query string including the leading `'?'`, or an empty string.
+
+#### `searchParams: URLSearchParams`
+
+A `URLSearchParams` object for the query string. Mutations to the params are reflected in the URL.
+
+#### `hash: string`
+
+The fragment including the leading `'#'`, or an empty string.
+
+### Converting to string
+
+#### `URL.toString(): string`
+
+Returns the serialized string form.
+
+#### `URL.toJSON(): string`
+
+Returns the serialized string form. Suitable for JSON serialization.
+
+### File URL conversion
+
+#### `URL.fileURLToPath(url: URL | string): string`
+
+Convert a `file:` URL to a platform-specific file path. `url` may be a `URL` instance or a string.
+
+**Parameters**
+
+| Parameter | Type            | Default | Description                                                  |
+| --------- | --------------- | ------- | ------------------------------------------------------------ |
+| `url`     | `URL \| string` | —       | The `file:` URL to convert, as a `URL` instance or a string. |
+
+**Throws**
+
+- `INVALID_URL_SCHEME` — the URL does not use the `file:` protocol.
+- `INVALID_FILE_URL_HOST` — (non-Windows) the URL has a host other than empty or `'localhost'`.
+- `INVALID_FILE_URL_PATH` — the URL path contains an encoded path-separator or NUL character, or, on Windows, is not an absolute drive path.
+
+#### `URL.pathToFileURL(pathname: string): URL`
 
 Convert a platform-specific file path to a `file:` URL.
 
-#### `const href = URL.format(parts)`
+**Parameters**
 
-Format a URL from individual `parts`:
+| Parameter  | Type     | Default | Description                                 |
+| ---------- | -------- | ------- | ------------------------------------------- |
+| `pathname` | `string` | —       | The platform-specific file path to convert. |
 
-```js
-parts = {
-  protocol,
-  auth,
-  host,
-  hostname,
-  port,
-  pathname,
-  search,
-  query,
-  hash,
-  slashes
+### Type checks
+
+#### `URL.isURL(value: unknown): value is URL`
+
+Return `true` if `value` is a `URL` instance.
+
+**Parameters**
+
+| Parameter | Type      | Default | Description        |
+| --------- | --------- | ------- | ------------------ |
+| `value`   | `unknown` | —       | The value to test. |
+
+#### `URL.isURLSearchParams(value: unknown): value is URLSearchParams`
+
+Return `true` if `value` is a `URLSearchParams` instance.
+
+**Parameters**
+
+| Parameter | Type      | Default | Description        |
+| --------- | --------- | ------- | ------------------ |
+| `value`   | `unknown` | —       | The value to test. |
+
+### Constructing search params
+
+#### `new URLSearchParams(init: string | Record<string, string> | Iterable<[string, string]>)`
+
+Create a new `URLSearchParams` instance. `init` may be a query string, an iterable of `[name, value]` pairs, or an object of key-value pairs.
+
+**Parameters**
+
+| Parameter | Type                                                             | Default | Description                                                                                                          |
+| --------- | ---------------------------------------------------------------- | ------- | -------------------------------------------------------------------------------------------------------------------- |
+| `init`    | `string \| Record<string, string> \| Iterable<[string, string]>` | —       | A query string, an iterable of `[name, value]` pairs, or an object of key-value pairs to initialize the params from. |
+
+### Reading and writing parameters
+
+#### `get(name: string): string | undefined`
+
+Return the first value for `name`, or `null` if not present.
+
+**Parameters**
+
+| Parameter | Type     | Default | Description                    |
+| --------- | -------- | ------- | ------------------------------ |
+| `name`    | `string` | —       | The parameter name to look up. |
+
+#### `getAll(name: string): string[]`
+
+Return all values for `name` as an array.
+
+**Parameters**
+
+| Parameter | Type     | Default | Description                    |
+| --------- | -------- | ------- | ------------------------------ |
+| `name`    | `string` | —       | The parameter name to look up. |
+
+#### `has(name: string, value?: string): boolean`
+
+Return `true` if a pair with `name` exists. If `value` is provided, the pair must also match `value`.
+
+**Parameters**
+
+| Parameter | Type     | Default | Description                                       |
+| --------- | -------- | ------- | ------------------------------------------------- |
+| `name`    | `string` | —       | The parameter name to check.                      |
+| `value?`  | `string` | —       | If provided, the pair must also match this value. |
+
+#### `append(name: string, value: string): void`
+
+Append a new `name`/`value` pair.
+
+**Parameters**
+
+| Parameter | Type     | Default | Description          |
+| --------- | -------- | ------- | -------------------- |
+| `name`    | `string` | —       | The parameter name.  |
+| `value`   | `string` | —       | The parameter value. |
+
+#### `set(name: string, value: string): void`
+
+Set the value for `name`, replacing any existing pairs with that name.
+
+**Parameters**
+
+| Parameter | Type     | Default | Description         |
+| --------- | -------- | ------- | ------------------- |
+| `name`    | `string` | —       | The parameter name. |
+| `value`   | `string` | —       | The value to set.   |
+
+#### `delete(name: string, value?: string): void`
+
+Remove all pairs with `name`. If `value` is provided, only pairs with both the matching `name` and `value` are removed.
+
+**Parameters**
+
+| Parameter | Type     | Default | Description                                                   |
+| --------- | -------- | ------- | ------------------------------------------------------------- |
+| `name`    | `string` | —       | The parameter name to remove.                                 |
+| `value?`  | `string` | —       | If provided, only pairs also matching this value are removed. |
+
+#### `size: number`
+
+The total number of search parameters.
+
+### Serializing search params
+
+#### `URLSearchParams.toString(): string`
+
+Returns the serialized string form.
+
+#### `URLSearchParams.toJSON(): string`
+
+Returns the serialized string form. Suitable for JSON serialization.
+
+### Search params type check
+
+#### `URLSearchParams.isURLSearchParams(value: unknown): value is URLSearchParams`
+
+Return `true` if `value` is a `URLSearchParams` instance.
+
+**Parameters**
+
+| Parameter | Type      | Default | Description        |
+| --------- | --------- | ------- | ------------------ |
+| `value`   | `unknown` | —       | The value to test. |
+
+### Errors
+
+#### `URLError`
+
+```ts
+class URLError {
+  code: string
+  input: string
 }
 ```
 
-All properties are optional. If `host` is provided, `hostname` and `port` are ignored. If `search` is provided, `query` is ignored. Set `slashes` to `true` to include `'//'` after the protocol.
+## `bare-url/global`
+
+### Types
+
+#### `URLConstructor`
+
+```ts
+type URLConstructor = typeof url.URL
+```
+
+#### `URLSearchParamsConstructor`
+
+```ts
+type URLSearchParamsConstructor = typeof url.URLSearchParams
+```
+
+<!-- bare-refgen:api end -->
 
 ## License
 
