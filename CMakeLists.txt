@@ -5,8 +5,11 @@ find_package(cmake-fetch REQUIRED PATHS node_modules/cmake-fetch)
 
 project(bare_url C)
 
-fetch_package("github:holepunchto/libutf#f0d532e")
-fetch_package("github:holepunchto/liburl#2f0e4c1")
+fetch_package("github:holepunchto/libutf#a1ceca8")
+fetch_package("github:holepunchto/libpunycode#e91ee34")
+fetch_package("github:holepunchto/libnormalize#0e81f65")
+fetch_package("github:holepunchto/libidna#1471406")
+fetch_package("github:holepunchto/liburl#fc3abba")
 
 add_bare_module(bare_url)
 
