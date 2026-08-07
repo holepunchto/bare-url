@@ -23,8 +23,14 @@ target_link_libraries(
   ${bare_url}
   PRIVATE
     $<TARGET_OBJECTS:utf>
+    $<TARGET_OBJECTS:punycode>
+    $<TARGET_OBJECTS:normalize>
+    $<TARGET_OBJECTS:idna>
     $<TARGET_OBJECTS:url>
   PUBLIC
     utf
+    punycode
+    normalize
+    idna
     url
 )
