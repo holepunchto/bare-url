@@ -20,10 +20,9 @@ class URL {
     if (base !== undefined) base = String(base)
 
     this._components = new Uint32Array(8)
+    this._params = null
 
     this._parse(input, base, opts.throw !== false)
-
-    if (this._href) this._params = new URLSearchParams(this.search, this)
   }
 
   get [kind]() {
@@ -39,7 +38,7 @@ class URL {
   set href(value) {
     this._update(value)
 
-    this._params._parse(this.search)
+    if (this._params) this._params._parse(this.search)
   }
 
   // https://url.spec.whatwg.org/#dom-url-protocol
@@ -177,12 +176,16 @@ class URL {
       this._replace(value, this._components[6] - 1 /* ? */, this._components[7] - 1 /* # */)
     )
 
-    this._params._parse(this.search)
+    if (this._params) this._params._parse(this.search)
   }
 
   // https://url.spec.whatwg.org/#dom-url-searchparams
 
   get searchParams() {
+    if (this._params === null) {
+      this._params = new URLSearchParams(this.search, this)
+    }
+
     return this._params
   }
 
