@@ -82,18 +82,49 @@ static url_character_set_t bare_url__form_urlencoded_percent_encode_set = {
   0x01 | 0x02 | 0x04 | 0x08 | 0x10 | 0x20 | 0x40 | 0x80,
 };
 
+// Maximum length, in bytes, of a UTF-8 string that is read into a stack buffer.
+// Longer strings fall back to a heap allocation. This covers the vast majority
+// of URLs without touching the heap.
+#define BARE_URL_STACK_STRING_MAX 1024
+
+// Reads the UTF-8 encoding of `value` into `stack` when it fits, otherwise into
+// a freshly allocated heap buffer. Returns the buffer and writes its byte
+// length, excluding any null terminator, to `len`. The result must be released
+// with bare_url__free_string() together with the same `stack`.
+static inline utf8_t *
+bare_url__read_string(js_env_t *env, js_value_t *value, utf8_t *stack, size_t stack_len, size_t *len) {
+  int err;
+
+  size_t str_len;
+  err = js_get_value_string_utf8(env, value, NULL, 0, &str_len);
+  assert(err == 0);
+
+  utf8_t *buffer = str_len <= stack_len ? stack : malloc(str_len);
+
+  err = js_get_value_string_utf8(env, value, buffer, str_len, NULL);
+  assert(err == 0);
+
+  *len = str_len;
+
+  return buffer;
+}
+
+// Releases a buffer returned by bare_url__read_string(), freeing it only when it
+// was heap allocated rather than the caller's stack buffer.
+static inline void
+bare_url__free_string(utf8_t *buffer, utf8_t *stack) {
+  if (buffer != stack) free(buffer);
+}
+
 // https://url.spec.whatwg.org/#concept-urlencoded-serializer
 static void
 bare_url__serialize_form_urlencoded_component(js_env_t *env, js_value_t *value, utf8_string_t *result) {
   int err;
 
-  size_t len;
-  err = js_get_value_string_utf8(env, value, NULL, 0, &len);
-  assert(err == 0);
+  utf8_t stack[BARE_URL_STACK_STRING_MAX];
 
-  utf8_t *input = malloc(len);
-  err = js_get_value_string_utf8(env, value, input, len, NULL);
-  assert(err == 0);
+  size_t len;
+  utf8_t *input = bare_url__read_string(env, value, stack, sizeof(stack), &len);
 
   for (size_t i = 0; i < len; i++) {
     utf8_t c = input[i];
@@ -107,7 +138,7 @@ bare_url__serialize_form_urlencoded_component(js_env_t *env, js_value_t *value, 
     assert(err == 0);
   }
 
-  free(input);
+  bare_url__free_string(input, stack);
 }
 
 static js_value_t *
@@ -134,17 +165,14 @@ bare_url_parse(js_env_t *env, js_callback_info_t *info) {
   url_init(&base);
 
   if (has_base) {
-    size_t len;
-    err = js_get_value_string_utf8(env, argv[1], NULL, 0, &len);
-    assert(err == 0);
+    utf8_t stack[BARE_URL_STACK_STRING_MAX];
 
-    utf8_t *input = malloc(len);
-    err = js_get_value_string_utf8(env, argv[1], input, len, NULL);
-    assert(err == 0);
+    size_t len;
+    utf8_t *input = bare_url__read_string(env, argv[1], stack, sizeof(stack), &len);
 
     err = url_parse(&base, input, len, NULL);
 
-    free(input);
+    bare_url__free_string(input, stack);
 
     if (err < 0) {
       url_destroy(&base);
@@ -155,22 +183,17 @@ bare_url_parse(js_env_t *env, js_callback_info_t *info) {
     }
   }
 
+  utf8_t stack[BARE_URL_STACK_STRING_MAX];
+
   size_t len;
-  err = js_get_value_string_utf8(env, argv[0], NULL, 0, &len);
-  assert(err == 0);
-
-  utf8_t *input = malloc(len);
-  err = js_get_value_string_utf8(env, argv[0], input, len, NULL);
-  assert(err == 0);
-
-  js_value_t *handle;
+  utf8_t *input = bare_url__read_string(env, argv[0], stack, sizeof(stack), &len);
 
   url_t url;
   url_init(&url);
 
   err = url_parse(&url, input, len, has_base ? &base : NULL);
 
-  free(input);
+  bare_url__free_string(input, stack);
 
   if (err < 0) {
     url_destroy(&base);
@@ -217,17 +240,14 @@ bare_url_can_parse(js_env_t *env, js_callback_info_t *info) {
   url_init(&base);
 
   if (has_base) {
-    size_t len;
-    err = js_get_value_string_utf8(env, argv[1], NULL, 0, &len);
-    assert(err == 0);
+    utf8_t stack[BARE_URL_STACK_STRING_MAX];
 
-    utf8_t *input = malloc(len);
-    err = js_get_value_string_utf8(env, argv[1], input, len, NULL);
-    assert(err == 0);
+    size_t len;
+    utf8_t *input = bare_url__read_string(env, argv[1], stack, sizeof(stack), &len);
 
     err = url_parse(&base, input, len, NULL);
 
-    free(input);
+    bare_url__free_string(input, stack);
 
     if (err < 0) {
       url_destroy(&base);
@@ -240,20 +260,17 @@ bare_url_can_parse(js_env_t *env, js_callback_info_t *info) {
     }
   }
 
-  size_t len;
-  err = js_get_value_string_utf8(env, argv[0], NULL, 0, &len);
-  assert(err == 0);
+  utf8_t stack[BARE_URL_STACK_STRING_MAX];
 
-  utf8_t *input = malloc(len);
-  err = js_get_value_string_utf8(env, argv[0], input, len, NULL);
-  assert(err == 0);
+  size_t len;
+  utf8_t *input = bare_url__read_string(env, argv[0], stack, sizeof(stack), &len);
 
   url_t url;
   url_init(&url);
 
   err = url_parse(&url, input, len, has_base ? &base : NULL);
 
-  free(input);
+  bare_url__free_string(input, stack);
 
   url_destroy(&base);
   url_destroy(&url);
