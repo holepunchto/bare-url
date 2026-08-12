@@ -7,6 +7,20 @@ const kind = Symbol.for('bare.url.kind')
 
 const isWindows = Bare.platform === 'win32'
 
+// Scratch buffer that the binding writes the parsed component offsets into. A
+// single shared buffer is reused across every parse.
+//
+// The offsets are copied out into fields on the URL immediately after a
+// successful parse, so nothing observes the buffer across calls.
+const components = new Uint32Array(8)
+
+// The value used for a component that is not present in the URL.
+const unset = 0xffffffff
+
+// The characters that pathToFileURL() has to percent-encode itself. A backslash
+// is a path separator on Windows and so is left alone there.
+const reserved = isWindows ? /[%#?\n\r\t]/ : /[%#?\n\r\t\\]/
+
 class URL {
   static get [kind]() {
     return 0 // Compatibility version
@@ -19,11 +33,17 @@ class URL {
 
     if (base !== undefined) base = String(base)
 
-    this._components = new Uint32Array(8)
+    this._href = undefined
+    this._schemeEnd = 0
+    this._usernameEnd = 0
+    this._hostStart = 0
+    this._hostEnd = 0
+    this._pathStart = 0
+    this._queryStart = 0
+    this._fragmentStart = 0
+    this._params = null
 
     this._parse(input, base, opts.throw !== false)
-
-    if (this._href) this._params = new URLSearchParams(this.search, this)
   }
 
   get [kind]() {
@@ -39,23 +59,23 @@ class URL {
   set href(value) {
     this._update(value)
 
-    this._params._parse(this.search)
+    if (this._params) this._params._parse(this.search)
   }
 
   // https://url.spec.whatwg.org/#dom-url-protocol
 
   get protocol() {
-    return this._slice(0, this._components[0]) + ':'
+    return this._slice(0, this._schemeEnd) + ':'
   }
 
   set protocol(value) {
-    this._update(this._replace(value.replace(/:+$/, ''), 0, this._components[0]))
+    this._update(this._replace(value.replace(/:+$/, ''), 0, this._schemeEnd))
   }
 
   // https://url.spec.whatwg.org/#dom-url-username
 
   get username() {
-    return this._slice(this._components[0] + 3 /* :// */, this._components[1])
+    return this._slice(this._schemeEnd + 3 /* :// */, this._usernameEnd)
   }
 
   set username(value) {
@@ -65,13 +85,13 @@ class URL {
 
     if (this.username === '') value += '@'
 
-    this._update(this._replace(value, this._components[0] + 3 /* :// */, this._components[1]))
+    this._update(this._replace(value, this._schemeEnd + 3 /* :// */, this._usernameEnd))
   }
 
   // https://url.spec.whatwg.org/#dom-url-password
 
   get password() {
-    return this._href.slice(this._components[1] + 1 /* : */, this._components[2] - 1 /* @ */)
+    return this._href.slice(this._usernameEnd + 1 /* : */, this._hostStart - 1 /* @ */)
   }
 
   set password(value) {
@@ -79,8 +99,8 @@ class URL {
       return
     }
 
-    let start = this._components[1] + 1 /* : */
-    let end = this._components[2] - 1 /* @ */
+    let start = this._usernameEnd + 1 /* : */
+    let end = this._hostStart - 1 /* @ */
 
     if (this.password === '') {
       value = ':' + value
@@ -98,7 +118,7 @@ class URL {
   // https://url.spec.whatwg.org/#dom-url-host
 
   get host() {
-    return this._slice(this._components[2], this._components[5])
+    return this._slice(this._hostStart, this._pathStart)
   }
 
   set host(value) {
@@ -107,14 +127,14 @@ class URL {
     }
 
     this._update(
-      this._replace(value, this._components[2], this._components[value.includes(':') ? 5 : 3])
+      this._replace(value, this._hostStart, value.includes(':') ? this._pathStart : this._hostEnd)
     )
   }
 
   // https://url.spec.whatwg.org/#dom-url-hostname
 
   get hostname() {
-    return this._slice(this._components[2], this._components[3])
+    return this._slice(this._hostStart, this._hostEnd)
   }
 
   set hostname(value) {
@@ -122,13 +142,13 @@ class URL {
       return
     }
 
-    this._update(this._replace(value, this._components[2], this._components[3]))
+    this._update(this._replace(value, this._hostStart, this._hostEnd))
   }
 
   // https://url.spec.whatwg.org/#dom-url-port
 
   get port() {
-    return this._slice(this._components[3] + 1 /* : */, this._components[5])
+    return this._slice(this._hostEnd + 1 /* : */, this._pathStart)
   }
 
   set port(value) {
@@ -136,20 +156,20 @@ class URL {
       return
     }
 
-    let start = this._components[3] + 1 /* : */
+    let start = this._hostEnd + 1 /* : */
 
     if (this.port === '') {
       value = ':' + value
       start--
     }
 
-    this._update(this._replace(value, start, this._components[5]))
+    this._update(this._replace(value, start, this._pathStart))
   }
 
   // https://url.spec.whatwg.org/#dom-url-pathname
 
   get pathname() {
-    return this._slice(this._components[5], this._components[6] - 1 /* ? */)
+    return this._slice(this._pathStart, this._queryStart - 1 /* ? */)
   }
 
   set pathname(value) {
@@ -161,41 +181,45 @@ class URL {
       value = '/' + value
     }
 
-    this._update(this._replace(value, this._components[5], this._components[6] - 1 /* ? */))
+    this._update(this._replace(value, this._pathStart, this._queryStart - 1 /* ? */))
   }
 
   // https://url.spec.whatwg.org/#dom-url-search
 
   get search() {
-    return this._slice(this._components[6] - 1 /* ? */, this._components[7] - 1 /* # */)
+    return this._slice(this._queryStart - 1 /* ? */, this._fragmentStart - 1 /* # */)
   }
 
   set search(value) {
     if (value && value[0] !== '?') value = '?' + value
 
     this._update(
-      this._replace(value, this._components[6] - 1 /* ? */, this._components[7] - 1 /* # */)
+      this._replace(value, this._queryStart - 1 /* ? */, this._fragmentStart - 1 /* # */)
     )
 
-    this._params._parse(this.search)
+    if (this._params) this._params._parse(this.search)
   }
 
   // https://url.spec.whatwg.org/#dom-url-searchparams
 
   get searchParams() {
+    if (this._params === null) {
+      this._params = new URLSearchParams(this.search, this)
+    }
+
     return this._params
   }
 
   // https://url.spec.whatwg.org/#dom-url-hash
 
   get hash() {
-    return this._slice(this._components[7] - 1 /* # */)
+    return this._slice(this._fragmentStart - 1 /* # */)
   }
 
   set hash(value) {
     if (value && value[0] !== '#') value = '#' + value
 
-    this._update(this._replace(value, this._components[7] - 1 /* # */))
+    this._update(this._replace(value, this._fragmentStart - 1 /* # */))
   }
 
   toString() {
@@ -233,18 +257,32 @@ class URL {
   }
 
   _parse(input, base, shouldThrow) {
+    let href
+
     try {
-      this._href = binding.parse(
-        String(input),
-        base ? String(base) : null,
-        this._components,
-        shouldThrow
-      )
+      href = binding.parse(input, base || null, components, shouldThrow)
     } catch (err) {
       if (err instanceof TypeError) throw err
 
       throw errors.INVALID_URL(`Invalid URL '${input}'`, input)
     }
+
+    if (href === undefined) return
+
+    this._href = href
+    this._schemeEnd = components[0]
+    this._usernameEnd = components[1]
+    this._hostStart = components[2]
+    this._hostEnd = components[3]
+    this._pathStart = components[5]
+
+    const queryStart = components[6]
+    const fragmentStart = components[7]
+
+    const end = href.length + 1
+
+    this._queryStart = queryStart === unset ? end : queryStart
+    this._fragmentStart = fragmentStart === unset ? end : fragmentStart
   }
 
   _update(input) {
@@ -301,27 +339,35 @@ exports.fileURLToPath = function fileURLToPath(url) {
     throw errors.INVALID_URL_SCHEME('The URL must use the file: protocol')
   }
 
-  if (isWindows) {
-    if (/%2f|%5c/i.test(url.pathname)) {
-      throw errors.INVALID_FILE_URL_PATH(
-        'The file: URL path must not include encoded \\ or / characters'
-      )
-    }
-  } else {
-    if (url.hostname) {
-      throw errors.INVALID_FILE_URL_HOST("The file: URL host must be 'localhost' or empty")
-    }
+  if (!isWindows && url.hostname) {
+    throw errors.INVALID_FILE_URL_HOST("The file: URL host must be 'localhost' or empty")
+  }
 
-    if (/%2f/i.test(url.pathname)) {
+  const encoded = url.pathname
+
+  // Every check below looks for a percent encoded sequence, as does the decoding
+  // that follows, so a path without any can skip all of them.
+  const hasEncoded = encoded.includes('%')
+
+  if (hasEncoded) {
+    if (isWindows) {
+      if (/%2f|%5c/i.test(encoded)) {
+        throw errors.INVALID_FILE_URL_PATH(
+          'The file: URL path must not include encoded \\ or / characters'
+        )
+      }
+    } else if (/%2f/i.test(encoded)) {
       throw errors.INVALID_FILE_URL_PATH('The file: URL path must not include encoded / characters')
     }
+
+    if (/%00/i.test(encoded)) {
+      throw errors.INVALID_FILE_URL_PATH(
+        'The file: URL path must not include encoded NUL characters'
+      )
+    }
   }
 
-  if (/%00/i.test(url.pathname)) {
-    throw errors.INVALID_FILE_URL_PATH('The file: URL path must not include encoded NUL characters')
-  }
-
-  const pathname = path.normalize(decodeURIComponent(url.pathname))
+  const pathname = path.normalize(hasEncoded ? decodeURIComponent(encoded) : encoded)
 
   if (isWindows) {
     if (url.hostname) return '\\\\' + url.hostname + pathname
@@ -347,16 +393,20 @@ exports.pathToFileURL = function pathToFileURL(pathname) {
     resolved += '\\'
   }
 
-  resolved = resolved
-    .replaceAll('%', '%25') // Must be first
-    .replaceAll('#', '%23')
-    .replaceAll('?', '%3f')
-    .replaceAll('\n', '%0a')
-    .replaceAll('\r', '%0d')
-    .replaceAll('\t', '%09')
+  // Paths hardly ever contain any of these, so one pass to rule them out is
+  // cheaper than the six or seven replacements it stands in for.
+  if (reserved.test(resolved)) {
+    resolved = resolved
+      .replaceAll('%', '%25') // Must be first
+      .replaceAll('#', '%23')
+      .replaceAll('?', '%3f')
+      .replaceAll('\n', '%0a')
+      .replaceAll('\r', '%0d')
+      .replaceAll('\t', '%09')
 
-  if (!isWindows) {
-    resolved = resolved.replaceAll('\\', '%5c')
+    if (!isWindows) {
+      resolved = resolved.replaceAll('\\', '%5c')
+    }
   }
 
   return new URL('file:' + resolved)
