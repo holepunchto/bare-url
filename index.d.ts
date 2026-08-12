@@ -20,7 +20,10 @@ interface URL {
   pathname: string
   /** The query string including the leading `'?'`, or an empty string. */
   search: string
-  /** A `URLSearchParams` object for the query string. Mutations to the params are reflected in the URL. */
+  /**
+   * A `URLSearchParams` object for the query string. Mutations to the params are reflected in the
+   * URL.
+   */
   searchParams: URLSearchParams
   /** The fragment including the leading `'#'`, or an empty string. */
   hash: string
@@ -70,11 +73,14 @@ declare namespace URL {
   export function canParse(input: string, base?: string | URL): boolean
 
   /**
-   * Convert a `file:` URL to a platform-specific file path. `url` may be a `URL` instance or a string.
+   * Convert a `file:` URL to a platform-specific file path. `url` may be a `URL` instance or a
+   * string.
    * @param url - The `file:` URL to convert, as a `URL` instance or a string.
    * @throws {INVALID_URL_SCHEME} the URL does not use the `file:` protocol.
-   * @throws {INVALID_FILE_URL_HOST} (non-Windows) the URL has a host other than empty or `'localhost'`.
-   * @throws {INVALID_FILE_URL_PATH} the URL path contains an encoded path-separator or NUL character, or, on Windows, is not an absolute drive path.
+   * @throws {INVALID_FILE_URL_HOST} (non-Windows) the URL has a host other than empty or
+   * `'localhost'`.
+   * @throws {INVALID_FILE_URL_PATH} the URL path contains an encoded path-separator or NUL
+   * character, or, on Windows, is not an absolute drive path.
    */
   export function fileURLToPath(url: URL | string): string
 

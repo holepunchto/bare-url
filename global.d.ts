@@ -12,8 +12,10 @@ declare global {
    */
   type URL = url.URL
   /**
-   * Create a new `URLSearchParams` instance. `init` may be a query string, an iterable of `[name, value]` pairs, or an object of key-value pairs.
-   * @param init - A query string, an iterable of `[name, value]` pairs, or an object of key-value pairs to initialize the params from.
+   * Create a new `URLSearchParams` instance. `init` may be a query string, an iterable of `[name,
+   * value]` pairs, or an object of key-value pairs.
+   * @param init - A query string, an iterable of `[name, value]` pairs, or an object of key-value
+   * pairs to initialize the params from.
    */
   type URLSearchParams = url.URLSearchParams
 

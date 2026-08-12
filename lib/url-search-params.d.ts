@@ -9,7 +9,8 @@ interface URLSearchParams extends Iterable<[name: string, value: string]> {
    */
   append(name: string, value: string): void
   /**
-   * Remove all pairs with `name`. If `value` is provided, only pairs with both the matching `name` and `value` are removed.
+   * Remove all pairs with `name`. If `value` is provided, only pairs with both the matching `name`
+   * and `value` are removed.
    * @param name - The parameter name to remove.
    * @param value - If provided, only pairs also matching this value are removed.
    */
@@ -25,7 +26,8 @@ interface URLSearchParams extends Iterable<[name: string, value: string]> {
    */
   getAll(name: string): string[]
   /**
-   * Return `true` if a pair with `name` exists. If `value` is provided, the pair must also match `value`.
+   * Return `true` if a pair with `name` exists. If `value` is provided, the pair must also match
+   * `value`.
    * @param name - The parameter name to check.
    * @param value - If provided, the pair must also match this value.
    */
@@ -45,8 +47,10 @@ interface URLSearchParams extends Iterable<[name: string, value: string]> {
 
 declare class URLSearchParams {
   /**
-   * Create a new `URLSearchParams` instance. `init` may be a query string, an iterable of `[name, value]` pairs, or an object of key-value pairs.
-   * @param init - A query string, an iterable of `[name, value]` pairs, or an object of key-value pairs to initialize the params from.
+   * Create a new `URLSearchParams` instance. `init` may be a query string, an iterable of `[name,
+   * value]` pairs, or an object of key-value pairs.
+   * @param init - A query string, an iterable of `[name, value]` pairs, or an object of key-value
+   * pairs to initialize the params from.
    */
   constructor(init: string | Record<string, string> | Iterable<[string, string]>)
 }
