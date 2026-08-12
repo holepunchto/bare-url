@@ -26,7 +26,7 @@ require('bare-url/global')
 
 ## API
 
-See the [full API reference](https://docs.pears.com/reference/bare/modules/bare-url).
+See the [`bare-url` reference](https://docs.pears.com/reference/bare/modules/bare-url).
 
 ## License
 
