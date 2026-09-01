@@ -96,7 +96,7 @@ bare_url__check_components(js_env_t *env, js_value_t *value, uint32_t **result) 
 
   if (is_typedarray) {
     err = js_get_typedarray_info(env, value, &type, (void **) result, &len, &arraybuffer, NULL);
-    assert(err == 0);
+    if (err < 0) return false;
   }
 
   if (!is_typedarray || type != js_uint32array) {
@@ -141,21 +141,23 @@ typedef struct {
 // Exposes `value` as UTF-8. Strings that are stored as ASCII, which is nearly
 // all of them, are borrowed directly from the engine without being copied.
 // Anything else is transcoded into `stack`, or into a freshly allocated heap
-// buffer when it does not fit. The result must be released with
-// bare_url__free_string(), including when the transcoding buffer could not be
-// allocated.
+// buffer when it does not fit. A non-zero return leaves an exception pending.
+// The result must be released with bare_url__free_string() either way.
 static inline int
 bare_url__read_string(js_env_t *env, js_value_t *value, utf8_t *stack, size_t stack_len, bare_url_string_t *result) {
   int err;
+
+  result->data = NULL;
+  result->len = 0;
+  result->view = NULL;
+  result->heap = NULL;
 
   js_string_encoding_t encoding;
   const void *data;
   size_t len;
 
   err = js_get_string_view(env, value, &encoding, &data, &len, &result->view);
-  assert(err == 0);
-
-  result->heap = NULL;
+  if (err < 0) return err;
 
   size_t utf8_len;
 
@@ -191,8 +193,8 @@ bare_url__read_string(js_env_t *env, js_value_t *value, utf8_t *stack, size_t st
     buffer = result->heap = malloc(utf8_len);
 
     if (buffer == NULL) {
-      result->data = NULL;
-      result->len = 0;
+      err = js_throw_error(env, uv_err_name(UV_ENOMEM), uv_strerror(UV_ENOMEM));
+      assert(err == 0);
 
       return -1;
     }
@@ -218,6 +220,8 @@ bare_url__free_string(js_env_t *env, bare_url_string_t *string) {
   int err;
 
   free(string->heap);
+
+  if (string->view == NULL) return;
 
   err = js_release_string_view(env, string->view);
   assert(err == 0);
@@ -249,7 +253,9 @@ bare_url_parse(js_env_t *env, js_callback_info_t *info) {
   err = js_get_value_bool(env, argv[3], &should_throw);
   assert(err == 0);
 
-  bool out_of_memory = false;
+  // Set when the input could not be read, which leaves an exception of its own
+  // pending and so must not be reported as a parse failure on top.
+  bool threw = false;
 
   url_t base;
   url_init(&base);
@@ -261,17 +267,14 @@ bare_url_parse(js_env_t *env, js_callback_info_t *info) {
     err = bare_url__read_string(env, argv[1], stack, sizeof(stack), &input);
 
     if (err == 0) err = url_parse(&base, input.data, input.len, NULL);
-    else out_of_memory = true;
+    else threw = true;
 
     bare_url__free_string(env, &input);
 
     if (err < 0) {
       url_destroy(&base);
 
-      if (out_of_memory) {
-        err = js_throw_error(env, uv_err_name(UV_ENOMEM), uv_strerror(UV_ENOMEM));
-        assert(err == 0);
-      } else if (should_throw) {
+      if (should_throw && !threw) {
         err = js_throw_error(env, NULL, "Invalid base URL");
         assert(err == 0);
       }
@@ -289,7 +292,7 @@ bare_url_parse(js_env_t *env, js_callback_info_t *info) {
   url_init(&url);
 
   if (err == 0) err = url_parse(&url, input.data, input.len, has_base ? &base : NULL);
-  else out_of_memory = true;
+  else threw = true;
 
   bare_url__free_string(env, &input);
 
@@ -297,10 +300,7 @@ bare_url_parse(js_env_t *env, js_callback_info_t *info) {
     url_destroy(&base);
     url_destroy(&url);
 
-    if (out_of_memory) {
-      err = js_throw_error(env, uv_err_name(UV_ENOMEM), uv_strerror(UV_ENOMEM));
-      assert(err == 0);
-    } else if (should_throw) {
+    if (should_throw && !threw) {
       err = js_throw_error(env, NULL, "Invalid URL");
       assert(err == 0);
     }
@@ -308,14 +308,17 @@ bare_url_parse(js_env_t *env, js_callback_info_t *info) {
     return NULL;
   }
 
-  memcpy(components, &url.components, sizeof(url.components));
-
   js_value_t *href;
   err = js_create_string_latin1(env, (const latin1_t *) url.href.data, url.href.len, &href);
-  assert(err == 0);
+
+  // The offsets are only handed over once the href they refer to is, so a
+  // failure here leaves the caller's buffer as it was.
+  if (err == 0) memcpy(components, &url.components, sizeof(url.components));
 
   url_destroy(&base);
   url_destroy(&url);
+
+  if (err < 0) return NULL;
 
   return href;
 }
@@ -337,7 +340,7 @@ bare_url_can_parse(js_env_t *env, js_callback_info_t *info) {
   bool has_base;
   if (!bare_url__check_base(env, argv[1], &has_base)) return NULL;
 
-  bool out_of_memory = false;
+  bool threw = false;
 
   url_t base;
   url_init(&base);
@@ -349,19 +352,14 @@ bare_url_can_parse(js_env_t *env, js_callback_info_t *info) {
     err = bare_url__read_string(env, argv[1], stack, sizeof(stack), &input);
 
     if (err == 0) err = url_parse(&base, input.data, input.len, NULL);
-    else out_of_memory = true;
+    else threw = true;
 
     bare_url__free_string(env, &input);
 
     if (err < 0) {
       url_destroy(&base);
 
-      if (out_of_memory) {
-        err = js_throw_error(env, uv_err_name(UV_ENOMEM), uv_strerror(UV_ENOMEM));
-        assert(err == 0);
-
-        return NULL;
-      }
+      if (threw) return NULL;
 
       js_value_t *result;
       err = js_get_boolean(env, false, &result);
@@ -380,24 +378,17 @@ bare_url_can_parse(js_env_t *env, js_callback_info_t *info) {
   url_init(&url);
 
   if (err == 0) err = url_parse(&url, input.data, input.len, has_base ? &base : NULL);
-  else out_of_memory = true;
+  else threw = true;
 
   bare_url__free_string(env, &input);
 
   url_destroy(&base);
   url_destroy(&url);
 
-  bool can_parse = err == 0;
-
-  if (out_of_memory) {
-    err = js_throw_error(env, uv_err_name(UV_ENOMEM), uv_strerror(UV_ENOMEM));
-    assert(err == 0);
-
-    return NULL;
-  }
+  if (threw) return NULL;
 
   js_value_t *result;
-  err = js_get_boolean(env, can_parse, &result);
+  err = js_get_boolean(env, err == 0, &result);
   assert(err == 0);
 
   return result;
