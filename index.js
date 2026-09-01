@@ -17,6 +17,53 @@ const components = new Uint32Array(8)
 // The value used for a component that is not present in the URL.
 const unset = 0xffffffff
 
+// The schemes the parser treats specially. A URL cannot be switched between a
+// special and a non-special scheme, and a backslash only terminates a host for
+// the former.
+const special = new Set(['ftp', 'file', 'http', 'https', 'ws', 'wss'])
+
+// https://url.spec.whatwg.org/#scheme-start-state
+const scheme = /^[a-z][a-z0-9+\-.]*$/
+
+// ASCII tab and newline are removed from input before it is parsed rather than
+// percent-encoded like the other C0 controls.
+const whitespaceAll = /[\t\n\r]/g
+
+// The characters that terminate a host, and so bound the value the host and
+// hostname setters accept.
+const hostEnd = /[/\\?#]/
+const hostEndOpaque = /[/?#]/
+
+// The delimiters that would let a setter's value escape the component it is
+// spliced into. Everything else is left to the reparse, which applies the full
+// percent-encode set for the component. As elsewhere in this package, each set
+// needs two patterns because test() advances a global pattern's lastIndex.
+//
+// Credentials are not run through the parser and so keep their tabs and
+// newlines, percent-encoded, rather than having them stripped.
+const userinfoDelimiter = /[\t\n\r/\\?#@:]/
+const userinfoDelimiterAll = /[\t\n\r/\\?#@:]/g
+
+const pathDelimiter = /[?#]/
+const pathDelimiterAll = /[?#]/g
+
+// A leading or trailing run of C0 control or space in a value that ends up at
+// either end of the href. The parser strips those, but only when parsing a URL
+// as a whole, so a setter has to encode its own.
+const edges = /^[\u0000-\u0020]+|[\u0000-\u0020]+$/g
+
+const escapes = {
+  '\t': '%09',
+  '\n': '%0A',
+  '\r': '%0D',
+  '/': '%2F',
+  '\\': '%5C',
+  ':': '%3A',
+  '?': '%3F',
+  '@': '%40',
+  '#': '%23'
+}
+
 // The characters that pathToFileURL() has to percent-encode itself. A backslash
 // is a path separator on Windows and so is left alone there.
 const reserved = isWindows ? /[%#?\n\r\t]/ : /[%#?\n\r\t\\]/
@@ -57,7 +104,9 @@ class URL {
   }
 
   set href(value) {
-    this._update(value)
+    // Unlike every other setter, the href setter reports a parse failure rather
+    // than leaving the URL untouched.
+    this._parse(String(value), null, true)
 
     if (this._params) this._params._parse(this.search)
   }
@@ -69,7 +118,27 @@ class URL {
   }
 
   set protocol(value) {
-    this._update(this._replace(value.replace(/:+$/, ''), 0, this._schemeEnd))
+    value = strip(String(value))
+
+    const end = value.indexOf(':')
+
+    if (end !== -1) value = value.slice(0, end)
+
+    value = value.toLowerCase()
+
+    if (!scheme.test(value)) return
+
+    const current = this._slice(0, this._schemeEnd)
+
+    if (special.has(current) !== special.has(value)) return
+
+    if (value === 'file' && (this.username || this.password || this.port)) {
+      return
+    }
+
+    if (current === 'file' && this._hostStart === this._hostEnd) return
+
+    this._update(this._replace(value, 0, this._schemeEnd))
   }
 
   // https://url.spec.whatwg.org/#dom-url-username
@@ -83,7 +152,9 @@ class URL {
       return
     }
 
-    if (this.username === '') value += '@'
+    value = encodeUserinfo(String(value))
+
+    if (!hasCredentials(this)) value += '@'
 
     this._update(this._replace(value, this._schemeEnd + 3 /* :// */, this._usernameEnd))
   }
@@ -99,20 +170,16 @@ class URL {
       return
     }
 
-    let start = this._usernameEnd + 1 /* : */
+    value = ':' + encodeUserinfo(String(value))
+
     let end = this._hostStart - 1 /* @ */
 
-    if (this.password === '') {
-      value = ':' + value
-      start--
-    }
-
-    if (this.username === '') {
+    if (!hasCredentials(this)) {
       value += '@'
-      end++
+      end = this._usernameEnd
     }
 
-    this._update(this._replace(value, start, end))
+    this._update(this._replace(value, this._usernameEnd, end))
   }
 
   // https://url.spec.whatwg.org/#dom-url-host
@@ -126,9 +193,38 @@ class URL {
       return
     }
 
-    this._update(
-      this._replace(value, this._hostStart, value.includes(':') ? this._pathStart : this._hostEnd)
-    )
+    const protocol = this._slice(0, this._schemeEnd)
+
+    value = truncateHost(protocol, String(value))
+
+    // An `@` would make the reparse read the value as credentials rather than
+    // as a host, so it is rejected outright.
+    if (value.includes('@')) return
+
+    const separator = portSeparator(value)
+
+    let end = this._hostEnd
+
+    // A port in the value is parsed separately so that an invalid one leaves
+    // the existing port in place rather than rejecting the host along with it.
+    if (separator !== -1) {
+      // A file URL cannot have a port, so a value carrying one is rejected
+      // rather than split.
+      if (protocol === 'file') return
+
+      const port = parsePort(value.slice(separator + 1))
+
+      value = value.slice(0, separator)
+
+      if (port !== null) {
+        value += port
+        end = this._pathStart
+      }
+    }
+
+    if (value === '' && cannotHaveEmptyHost(protocol)) return
+
+    this._update(this._replace(value, this._hostStart, end))
   }
 
   // https://url.spec.whatwg.org/#dom-url-hostname
@@ -141,6 +237,17 @@ class URL {
     if (hasOpaquePath(this)) {
       return
     }
+
+    const protocol = this._slice(0, this._schemeEnd)
+
+    value = truncateHost(protocol, String(value))
+
+    // A port cannot be set through this setter, and a value that carries one is
+    // rejected outright rather than truncated. An `@` would make the reparse
+    // read the value as credentials rather than as a host.
+    if (value.includes('@') || portSeparator(value) !== -1) return
+
+    if (value === '' && cannotHaveEmptyHost(protocol)) return
 
     this._update(this._replace(value, this._hostStart, this._hostEnd))
   }
@@ -156,14 +263,15 @@ class URL {
       return
     }
 
-    let start = this._hostEnd + 1 /* : */
+    value = strip(String(value))
 
-    if (this.port === '') {
-      value = ':' + value
-      start--
+    if (value !== '') {
+      value = parsePort(value)
+
+      if (value === null) return
     }
 
-    this._update(this._replace(value, start, this._pathStart))
+    this._update(this._replace(value, this._hostEnd, this._pathStart))
   }
 
   // https://url.spec.whatwg.org/#dom-url-pathname
@@ -177,7 +285,11 @@ class URL {
       return
     }
 
-    if (value[0] !== '/' && value[0] !== '\\') {
+    value = encodePath(encodeEdges(String(value)))
+
+    // An empty path is left alone, as only a special scheme is required to have
+    // one and the reparse inserts it there.
+    if (value !== '' && value[0] !== '/' && value[0] !== '\\') {
       value = '/' + value
     }
 
@@ -191,13 +303,17 @@ class URL {
   }
 
   set search(value) {
-    if (value && value[0] !== '?') value = '?' + value
+    value = String(value)
+
+    if (value !== '') {
+      if (value[0] === '?') value = value.slice(1)
+
+      value = '?' + encodeQuery(encodeEdges(value))
+    }
 
     this._update(
       this._replace(value, this._queryStart - 1 /* ? */, this._fragmentStart - 1 /* # */)
     )
-
-    if (this._params) this._params._parse(this.search)
   }
 
   // https://url.spec.whatwg.org/#dom-url-searchparams
@@ -217,7 +333,15 @@ class URL {
   }
 
   set hash(value) {
-    if (value && value[0] !== '#') value = '#' + value
+    value = String(value)
+
+    // The fragment runs to the end of the URL, so nothing in it can escape into
+    // another component and no delimiter needs encoding here.
+    if (value !== '') {
+      if (value[0] === '#') value = value.slice(1)
+
+      value = '#' + encodeEdges(value)
+    }
 
     this._update(this._replace(value, this._fragmentStart - 1 /* # */))
   }
@@ -262,7 +386,7 @@ class URL {
     try {
       href = binding.parse(input, base || null, components, shouldThrow)
     } catch (err) {
-      if (err instanceof TypeError) throw err
+      if (err instanceof TypeError || err.code !== undefined) throw err
 
       throw errors.INVALID_URL(`Invalid URL '${input}'`, input)
     }
@@ -290,7 +414,11 @@ class URL {
       this._parse(input, null, true)
     } catch (err) {
       if (err instanceof TypeError) throw err
+
+      return
     }
+
+    if (this._params) this._params._parse(this.search)
   }
 }
 
@@ -304,6 +432,93 @@ function hasOpaquePath(url) {
 // https://url.spec.whatwg.org/#cannot-have-a-username-password-port
 function cannotHaveCredentialsOrPort(url) {
   return url.hostname === '' || url.protocol === 'file:'
+}
+
+// Whether the URL carries a userinfo section, and so an `@` before its host.
+function hasCredentials(url) {
+  return url._hostStart !== url._usernameEnd
+}
+
+// Almost no input contains any of these, so it is worth ruling all three out
+// before rewriting anything.
+function strip(value) {
+  if (value.indexOf('\t') === -1 && value.indexOf('\n') === -1 && value.indexOf('\r') === -1) {
+    return value
+  }
+
+  return value.replace(whitespaceAll, '')
+}
+
+// https://url.spec.whatwg.org/#host-state
+//
+// Host parsing stops at the first character that starts another component, so
+// anything from there on is dropped rather than spliced into the host.
+function truncateHost(protocol, value) {
+  const end = value.search(special.has(protocol) ? hostEnd : hostEndOpaque)
+
+  return end === -1 ? value : value.slice(0, end)
+}
+
+// Only a special scheme other than file has to have a host.
+function cannotHaveEmptyHost(protocol) {
+  return protocol !== 'file' && special.has(protocol)
+}
+
+// The index of the colon that separates a host from its port, disregarding the
+// colons of an IPv6 address, or -1 if the host carries no port.
+function portSeparator(host) {
+  return host.indexOf(':', host[0] === '[' ? host.indexOf(']') : 0)
+}
+
+// https://url.spec.whatwg.org/#port-state
+//
+// Parsing stops at the first character that is not a digit, so a value with no
+// leading digits, or one that overflows, leaves the port as it was.
+function parsePort(value) {
+  value = /^\d*/.exec(value)[0]
+
+  if (value === '' || Number(value) > 65535) return null
+
+  return ':' + value
+}
+
+function encodeUserinfo(value) {
+  if (!userinfoDelimiter.test(value)) return value
+
+  return value.replace(userinfoDelimiterAll, (match) => escapes[match])
+}
+
+function encodePath(value) {
+  if (!pathDelimiter.test(value)) return value
+
+  return value.replace(pathDelimiterAll, (match) => escapes[match])
+}
+
+function encodeQuery(value) {
+  if (value.indexOf('#') === -1) return value
+
+  return value.replaceAll('#', '%23')
+}
+
+// Percent-encodes a leading or trailing run of C0 control or space, which the
+// parser would otherwise strip from a value that lands at either end of the
+// href. Every component that can end a URL encodes them anyway, so this only
+// brings the encoding forward.
+function encodeEdges(value) {
+  const len = value.length
+
+  if (len === 0) return value
+  if (value.charCodeAt(0) > 0x20 && value.charCodeAt(len - 1) > 0x20) return value
+
+  return value.replace(edges, (match) => {
+    let encoded = ''
+
+    for (let i = 0, n = match.length; i < n; i++) {
+      encoded += '%' + match.charCodeAt(i).toString(16).padStart(2, '0').toUpperCase()
+    }
+
+    return encoded
+  })
 }
 
 exports.URL = URL

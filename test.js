@@ -1,6 +1,7 @@
 require('./test/parse')
 require('./test/idna')
 require('./test/setters')
+require('./test/setters-injection')
 require('./test/search-params')
 require('./test/parse-static')
 require('./test/is-url')
