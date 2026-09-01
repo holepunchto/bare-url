@@ -386,7 +386,7 @@ class URL {
     try {
       href = binding.parse(input, base || null, components, shouldThrow)
     } catch (err) {
-      if (err instanceof TypeError) throw err
+      if (err instanceof TypeError || err.code !== undefined) throw err
 
       throw errors.INVALID_URL(`Invalid URL '${input}'`, input)
     }

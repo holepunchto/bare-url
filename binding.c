@@ -1,17 +1,133 @@
 #include <assert.h>
 #include <bare.h>
 #include <js.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 #include <url.h>
 #include <utf.h>
 #include <utf/string.h>
+#include <uv.h>
 
 // Maximum length, in bytes, of a UTF-8 string that is read into a stack buffer.
 // Longer strings fall back to a heap allocation. This covers the vast majority
 // of URLs without touching the heap.
 #define BARE_URL_STACK_STRING_MAX 1024
+
+// The number of component offsets the parser writes out.
+#define BARE_URL_COMPONENTS_LEN (sizeof(((url_t *) 0)->components) / sizeof(url_component_t))
+
+static bool
+bare_url__check_argc(js_env_t *env, size_t argc, size_t expected) {
+  int err;
+
+  if (argc < expected) {
+    err = js_throw_type_errorf(env, NULL, "Expected %zu arguments, got %zu", expected, argc);
+    assert(err == 0);
+
+    return false;
+  }
+
+  return true;
+}
+
+static bool
+bare_url__check_string(js_env_t *env, js_value_t *value, const char *message) {
+  int err;
+
+  bool is_string;
+  err = js_is_string(env, value, &is_string);
+  assert(err == 0);
+
+  if (!is_string) {
+    err = js_throw_type_error(env, NULL, message);
+    assert(err == 0);
+  }
+
+  return is_string;
+}
+
+static bool
+bare_url__check_base(js_env_t *env, js_value_t *value, bool *has_base) {
+  int err;
+
+  js_value_type_t type;
+  err = js_typeof(env, value, &type);
+  assert(err == 0);
+
+  *has_base = type == js_string;
+
+  if (type == js_string || type == js_null || type == js_undefined) return true;
+
+  err = js_throw_type_error(env, NULL, "Base must be a string, null, or undefined");
+  assert(err == 0);
+
+  return false;
+}
+
+static bool
+bare_url__check_boolean(js_env_t *env, js_value_t *value, const char *message) {
+  int err;
+
+  bool is_boolean;
+  err = js_is_boolean(env, value, &is_boolean);
+  assert(err == 0);
+
+  if (!is_boolean) {
+    err = js_throw_type_error(env, NULL, message);
+    assert(err == 0);
+  }
+
+  return is_boolean;
+}
+
+static bool
+bare_url__check_components(js_env_t *env, js_value_t *value, uint32_t **result) {
+  int err;
+
+  bool is_typedarray;
+  err = js_is_typedarray(env, value, &is_typedarray);
+  assert(err == 0);
+
+  js_typedarray_type_t type;
+  size_t len;
+  js_value_t *arraybuffer;
+
+  if (is_typedarray) {
+    err = js_get_typedarray_info(env, value, &type, (void **) result, &len, &arraybuffer, NULL);
+    assert(err == 0);
+  }
+
+  if (!is_typedarray || type != js_uint32array) {
+    err = js_throw_type_error(env, NULL, "Components must be a Uint32Array");
+    assert(err == 0);
+
+    return false;
+  }
+
+  // A detached typed array reports no length of its own, but its data pointer
+  // is stale rather than null and so must not be written to.
+  bool is_detached;
+  err = js_is_detached_arraybuffer(env, arraybuffer, &is_detached);
+  assert(err == 0);
+
+  if (is_detached) {
+    err = js_throw_type_error(env, NULL, "Components must not be detached");
+    assert(err == 0);
+
+    return false;
+  }
+
+  if (len < BARE_URL_COMPONENTS_LEN) {
+    err = js_throw_range_errorf(env, NULL, "Components must have at least %zu elements, got %zu", (size_t) BARE_URL_COMPONENTS_LEN, len);
+    assert(err == 0);
+
+    return false;
+  }
+
+  return true;
+}
 
 // The UTF-8 encoding of a JavaScript string, together with whatever backs it.
 typedef struct {
@@ -117,14 +233,20 @@ bare_url_parse(js_env_t *env, js_callback_info_t *info) {
   err = js_get_callback_info(env, info, &argc, argv, NULL, NULL);
   assert(err == 0);
 
-  assert(argc == 4);
+  if (!bare_url__check_argc(env, argc, 4)) return NULL;
+
+  if (!bare_url__check_string(env, argv[0], "Input must be a string")) return NULL;
+
+  bool has_base;
+  if (!bare_url__check_base(env, argv[1], &has_base)) return NULL;
+
+  uint32_t *components;
+  if (!bare_url__check_components(env, argv[2], &components)) return NULL;
+
+  if (!bare_url__check_boolean(env, argv[3], "Throw must be a boolean")) return NULL;
 
   bool should_throw;
   err = js_get_value_bool(env, argv[3], &should_throw);
-  assert(err == 0);
-
-  bool has_base;
-  err = js_is_string(env, argv[1], &has_base);
   assert(err == 0);
 
   bool out_of_memory = false;
@@ -186,20 +308,11 @@ bare_url_parse(js_env_t *env, js_callback_info_t *info) {
     return NULL;
   }
 
+  memcpy(components, &url.components, sizeof(url.components));
+
   js_value_t *href;
   err = js_create_string_latin1(env, (const latin1_t *) url.href.data, url.href.len, &href);
   assert(err == 0);
-
-  uint32_t *components;
-  size_t components_len;
-  err = js_get_typedarray_info(env, argv[2], NULL, (void **) &components, &components_len, NULL, NULL);
-  assert(err == 0);
-
-  // The typed array is owned by the JavaScript side of this module and is
-  // always exactly large enough to receive every component.
-  assert(components_len * sizeof(uint32_t) == sizeof(url.components));
-
-  memcpy(components, &url.components, sizeof(url.components));
 
   url_destroy(&base);
   url_destroy(&url);
@@ -217,11 +330,14 @@ bare_url_can_parse(js_env_t *env, js_callback_info_t *info) {
   err = js_get_callback_info(env, info, &argc, argv, NULL, NULL);
   assert(err == 0);
 
-  assert(argc == 2);
+  if (!bare_url__check_argc(env, argc, 2)) return NULL;
+
+  if (!bare_url__check_string(env, argv[0], "Input must be a string")) return NULL;
 
   bool has_base;
-  err = js_is_string(env, argv[1], &has_base);
-  assert(err == 0);
+  if (!bare_url__check_base(env, argv[1], &has_base)) return NULL;
+
+  bool out_of_memory = false;
 
   url_t base;
   url_init(&base);
@@ -233,11 +349,19 @@ bare_url_can_parse(js_env_t *env, js_callback_info_t *info) {
     err = bare_url__read_string(env, argv[1], stack, sizeof(stack), &input);
 
     if (err == 0) err = url_parse(&base, input.data, input.len, NULL);
+    else out_of_memory = true;
 
     bare_url__free_string(env, &input);
 
     if (err < 0) {
       url_destroy(&base);
+
+      if (out_of_memory) {
+        err = js_throw_error(env, uv_err_name(UV_ENOMEM), uv_strerror(UV_ENOMEM));
+        assert(err == 0);
+
+        return NULL;
+      }
 
       js_value_t *result;
       err = js_get_boolean(env, false, &result);
@@ -256,14 +380,24 @@ bare_url_can_parse(js_env_t *env, js_callback_info_t *info) {
   url_init(&url);
 
   if (err == 0) err = url_parse(&url, input.data, input.len, has_base ? &base : NULL);
+  else out_of_memory = true;
 
   bare_url__free_string(env, &input);
 
   url_destroy(&base);
   url_destroy(&url);
 
+  bool can_parse = err == 0;
+
+  if (out_of_memory) {
+    err = js_throw_error(env, uv_err_name(UV_ENOMEM), uv_strerror(UV_ENOMEM));
+    assert(err == 0);
+
+    return NULL;
+  }
+
   js_value_t *result;
-  err = js_get_boolean(env, err == 0, &result);
+  err = js_get_boolean(env, can_parse, &result);
   assert(err == 0);
 
   return result;
