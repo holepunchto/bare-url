@@ -26,8 +26,9 @@ typedef struct {
 // all of them, are borrowed directly from the engine without being copied.
 // Anything else is transcoded into `stack`, or into a freshly allocated heap
 // buffer when it does not fit. The result must be released with
-// bare_url__free_string().
-static inline void
+// bare_url__free_string(), including when the transcoding buffer could not be
+// allocated.
+static inline int
 bare_url__read_string(js_env_t *env, js_value_t *value, utf8_t *stack, size_t stack_len, bare_url_string_t *result) {
   int err;
 
@@ -46,7 +47,7 @@ bare_url__read_string(js_env_t *env, js_value_t *value, utf8_t *stack, size_t st
     result->data = (const utf8_t *) data;
     result->len = len;
 
-    return;
+    return 0;
   }
 
   if (encoding == js_latin1) {
@@ -58,7 +59,7 @@ bare_url__read_string(js_env_t *env, js_value_t *value, utf8_t *stack, size_t st
       result->data = (const utf8_t *) data;
       result->len = len;
 
-      return;
+      return 0;
     }
   } else {
     assert(encoding == js_utf16le);
@@ -66,7 +67,20 @@ bare_url__read_string(js_env_t *env, js_value_t *value, utf8_t *stack, size_t st
     utf8_len = utf8_length_from_utf16le((const utf16_t *) data, len);
   }
 
-  utf8_t *buffer = utf8_len <= stack_len ? stack : (result->heap = malloc(utf8_len));
+  utf8_t *buffer;
+
+  if (utf8_len <= stack_len) {
+    buffer = stack;
+  } else {
+    buffer = result->heap = malloc(utf8_len);
+
+    if (buffer == NULL) {
+      result->data = NULL;
+      result->len = 0;
+
+      return -1;
+    }
+  }
 
   if (encoding == js_latin1) {
     latin1_convert_to_utf8((const latin1_t *) data, len, buffer);
@@ -76,6 +90,8 @@ bare_url__read_string(js_env_t *env, js_value_t *value, utf8_t *stack, size_t st
 
   result->data = buffer;
   result->len = utf8_len;
+
+  return 0;
 }
 
 // Releases a string read with bare_url__read_string(), freeing its buffer only
@@ -111,6 +127,8 @@ bare_url_parse(js_env_t *env, js_callback_info_t *info) {
   err = js_is_string(env, argv[1], &has_base);
   assert(err == 0);
 
+  bool out_of_memory = false;
+
   url_t base;
   url_init(&base);
 
@@ -118,16 +136,23 @@ bare_url_parse(js_env_t *env, js_callback_info_t *info) {
     utf8_t stack[BARE_URL_STACK_STRING_MAX];
 
     bare_url_string_t input;
-    bare_url__read_string(env, argv[1], stack, sizeof(stack), &input);
+    err = bare_url__read_string(env, argv[1], stack, sizeof(stack), &input);
 
-    err = url_parse(&base, input.data, input.len, NULL);
+    if (err == 0) err = url_parse(&base, input.data, input.len, NULL);
+    else out_of_memory = true;
 
     bare_url__free_string(env, &input);
 
     if (err < 0) {
       url_destroy(&base);
 
-      if (should_throw) js_throw_error(env, NULL, "Invalid base URL");
+      if (out_of_memory) {
+        err = js_throw_error(env, uv_err_name(UV_ENOMEM), uv_strerror(UV_ENOMEM));
+        assert(err == 0);
+      } else if (should_throw) {
+        err = js_throw_error(env, NULL, "Invalid base URL");
+        assert(err == 0);
+      }
 
       return NULL;
     }
@@ -136,12 +161,13 @@ bare_url_parse(js_env_t *env, js_callback_info_t *info) {
   utf8_t stack[BARE_URL_STACK_STRING_MAX];
 
   bare_url_string_t input;
-  bare_url__read_string(env, argv[0], stack, sizeof(stack), &input);
+  err = bare_url__read_string(env, argv[0], stack, sizeof(stack), &input);
 
   url_t url;
   url_init(&url);
 
-  err = url_parse(&url, input.data, input.len, has_base ? &base : NULL);
+  if (err == 0) err = url_parse(&url, input.data, input.len, has_base ? &base : NULL);
+  else out_of_memory = true;
 
   bare_url__free_string(env, &input);
 
@@ -149,7 +175,13 @@ bare_url_parse(js_env_t *env, js_callback_info_t *info) {
     url_destroy(&base);
     url_destroy(&url);
 
-    if (should_throw) js_throw_error(env, NULL, "Invalid URL");
+    if (out_of_memory) {
+      err = js_throw_error(env, uv_err_name(UV_ENOMEM), uv_strerror(UV_ENOMEM));
+      assert(err == 0);
+    } else if (should_throw) {
+      err = js_throw_error(env, NULL, "Invalid URL");
+      assert(err == 0);
+    }
 
     return NULL;
   }
@@ -159,8 +191,13 @@ bare_url_parse(js_env_t *env, js_callback_info_t *info) {
   assert(err == 0);
 
   uint32_t *components;
-  err = js_get_typedarray_info(env, argv[2], NULL, (void **) &components, NULL, NULL, NULL);
+  size_t components_len;
+  err = js_get_typedarray_info(env, argv[2], NULL, (void **) &components, &components_len, NULL, NULL);
   assert(err == 0);
+
+  // The typed array is owned by the JavaScript side of this module and is
+  // always exactly large enough to receive every component.
+  assert(components_len * sizeof(uint32_t) == sizeof(url.components));
 
   memcpy(components, &url.components, sizeof(url.components));
 
@@ -193,9 +230,9 @@ bare_url_can_parse(js_env_t *env, js_callback_info_t *info) {
     utf8_t stack[BARE_URL_STACK_STRING_MAX];
 
     bare_url_string_t input;
-    bare_url__read_string(env, argv[1], stack, sizeof(stack), &input);
+    err = bare_url__read_string(env, argv[1], stack, sizeof(stack), &input);
 
-    err = url_parse(&base, input.data, input.len, NULL);
+    if (err == 0) err = url_parse(&base, input.data, input.len, NULL);
 
     bare_url__free_string(env, &input);
 
@@ -213,12 +250,12 @@ bare_url_can_parse(js_env_t *env, js_callback_info_t *info) {
   utf8_t stack[BARE_URL_STACK_STRING_MAX];
 
   bare_url_string_t input;
-  bare_url__read_string(env, argv[0], stack, sizeof(stack), &input);
+  err = bare_url__read_string(env, argv[0], stack, sizeof(stack), &input);
 
   url_t url;
   url_init(&url);
 
-  err = url_parse(&url, input.data, input.len, has_base ? &base : NULL);
+  if (err == 0) err = url_parse(&url, input.data, input.len, has_base ? &base : NULL);
 
   bare_url__free_string(env, &input);
 
