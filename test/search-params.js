@@ -241,6 +241,16 @@ test('toString, replaces lone surrogates', (t) => {
   t.is(params.toString(), '%EF%BF%BD=a%EF%BF%BDb')
 })
 
+test('toString, keeps surrogate pairs intact', (t) => {
+  const params = new URLSearchParams()
+
+  // Only unpaired surrogates are substituted; a pair either side of one is
+  // still a scalar value and must survive.
+  params.append('\ud800\udc00', 'a\ud800\udc00\udfffb')
+
+  t.is(params.toString(), '%F0%90%80%80=a%F0%90%80%80%EF%BF%BDb')
+})
+
 test('toString, round trips through the parser', (t) => {
   const input = 'a+b=c%26d&n%C3%A6vn=v%C3%A6rdi&plain=1'
 
