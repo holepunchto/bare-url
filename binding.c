@@ -193,6 +193,11 @@ bare_url__read_string(js_env_t *env, js_value_t *value, utf8_t *stack, size_t st
     buffer = result->heap = malloc(utf8_len);
 
     if (buffer == NULL) {
+      err = js_release_string_view(env, result->view);
+      assert(err == 0);
+
+      result->view = NULL;
+
       err = js_throw_error(env, uv_err_name(UV_ENOMEM), uv_strerror(UV_ENOMEM));
       assert(err == 0);
 
