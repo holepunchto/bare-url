@@ -1,6 +1,6 @@
 {
   "name": "bare-url",
-  "version": "2.5.3",
+  "version": "2.5.4",
   "description": "WHATWG URL implementation for JavaScript",
   "exports": {
     "./package": "./package.json",
