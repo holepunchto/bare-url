@@ -57,3 +57,9 @@ test('pathToFileURL encodes special characters', { skip: isWindows }, (t) => {
   t.is(URL.pathToFileURL('/foo/a%b').href, 'file:///foo/a%25b')
   t.is(URL.pathToFileURL('/foo/a\nb').href, 'file:///foo/a%0ab')
 })
+
+test('pathToFileURL handles namespaced paths', { skip: !isWindows }, (t) => {
+  t.is(URL.pathToFileURL(String.raw`\\?\C:\foo\bar`).href, 'file:///C:/foo/bar')
+
+  t.is(URL.pathToFileURL(String.raw`\\?\UNC\server\share\foo`).href, 'file://server/share/foo')
+})

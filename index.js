@@ -602,6 +602,14 @@ exports.fileURLToPath = function fileURLToPath(url) {
 exports.pathToFileURL = function pathToFileURL(pathname) {
   let resolved = path.resolve(pathname)
 
+  if (isWindows) {
+    if (resolved.startsWith('\\\\?\\UNC\\')) {
+      resolved = '\\\\' + resolved.slice(8)
+    } else if (/^\\\\\?\\[a-zA-Z]:\\/.test(resolved)) {
+      resolved = resolved.slice(4)
+    }
+  }
+
   if (pathname[pathname.length - 1] === '/') {
     resolved += '/'
   } else if (isWindows && pathname[pathname.length - 1] === '\\') {
