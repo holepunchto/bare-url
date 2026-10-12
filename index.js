@@ -494,9 +494,9 @@ function encodePath(value) {
   return value.replace(pathDelimiterAll, (match) => escapes[match])
 }
 
-// Paths hardly ever contain any of these, so one pass to rule them out is
-// cheaper than the six or seven replacements it stands in for.
 function encodeFilePath(value) {
+  // Paths hardly ever contain any of these, so one pass to rule them out is
+  // cheaper than the six or seven replacements it stands in for.
   if (!reserved.test(value)) return value
 
   value = value
