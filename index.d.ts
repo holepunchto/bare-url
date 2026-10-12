@@ -87,6 +87,9 @@ declare namespace URL {
   /**
    * Convert a platform-specific file path to a `file:` URL.
    * @param pathname - The platform-specific file path to convert.
+   * @throws {INVALID_ARG_VALUE} (Windows) the path is a UNC path with an empty server name or
+   * no resource path.
+   * @throws {INVALID_URL} the path does not form a valid `file:` URL.
    */
   export function pathToFileURL(pathname: string): URL
 
