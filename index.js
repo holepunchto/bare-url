@@ -494,6 +494,26 @@ function encodePath(value) {
   return value.replace(pathDelimiterAll, (match) => escapes[match])
 }
 
+function encodeFilePath(value) {
+  // Paths hardly ever contain any of these, so one pass to rule them out is
+  // cheaper than the six or seven replacements it stands in for.
+  if (!reserved.test(value)) return value
+
+  value = value
+    .replaceAll('%', '%25') // Must be first
+    .replaceAll('#', '%23')
+    .replaceAll('?', '%3f')
+    .replaceAll('\n', '%0a')
+    .replaceAll('\r', '%0d')
+    .replaceAll('\t', '%09')
+
+  if (!isWindows) {
+    value = value.replaceAll('\\', '%5c')
+  }
+
+  return value
+}
+
 function encodeQuery(value) {
   if (value.indexOf('#') === -1) return value
 
@@ -600,7 +620,27 @@ exports.fileURLToPath = function fileURLToPath(url) {
 }
 
 exports.pathToFileURL = function pathToFileURL(pathname) {
-  let resolved = path.resolve(pathname)
+  const isUNC = isWindows && pathname.startsWith('\\\\')
+
+  let resolved = isUNC ? pathname : path.resolve(pathname)
+
+  if (isUNC || (isWindows && resolved.startsWith('\\\\'))) {
+    // https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation
+    const hostStart = resolved.startsWith('\\\\?\\UNC\\') ? 8 : 2
+    const hostEnd = resolved.indexOf('\\', hostStart)
+
+    if (hostEnd === -1) {
+      throw errors.INVALID_ARG_VALUE('Missing UNC resource path')
+    }
+
+    if (hostEnd === 2) {
+      throw errors.INVALID_ARG_VALUE('Empty UNC servername')
+    }
+
+    const hostname = truncateHost('file', resolved.slice(hostStart, hostEnd))
+
+    return new URL('file://' + hostname + encodeFilePath(resolved.slice(hostEnd)))
+  }
 
   if (pathname[pathname.length - 1] === '/') {
     resolved += '/'
@@ -608,23 +648,7 @@ exports.pathToFileURL = function pathToFileURL(pathname) {
     resolved += '\\'
   }
 
-  // Paths hardly ever contain any of these, so one pass to rule them out is
-  // cheaper than the six or seven replacements it stands in for.
-  if (reserved.test(resolved)) {
-    resolved = resolved
-      .replaceAll('%', '%25') // Must be first
-      .replaceAll('#', '%23')
-      .replaceAll('?', '%3f')
-      .replaceAll('\n', '%0a')
-      .replaceAll('\r', '%0d')
-      .replaceAll('\t', '%09')
-
-    if (!isWindows) {
-      resolved = resolved.replaceAll('\\', '%5c')
-    }
-  }
-
-  return new URL('file:' + resolved)
+  return new URL('file:' + encodeFilePath(resolved))
 }
 
 exports.format = function format(parts) {

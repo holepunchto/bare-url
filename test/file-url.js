@@ -57,3 +57,41 @@ test('pathToFileURL encodes special characters', { skip: isWindows }, (t) => {
   t.is(URL.pathToFileURL('/foo/a%b').href, 'file:///foo/a%25b')
   t.is(URL.pathToFileURL('/foo/a\nb').href, 'file:///foo/a%0ab')
 })
+
+test('pathToFileURL handles UNC paths', { skip: !isWindows }, (t) => {
+  t.is(URL.pathToFileURL(String.raw`\\server\share\foo`).href, 'file://server/share/foo')
+  t.is(URL.pathToFileURL('\\\\server\\share\\foo\\').href, 'file://server/share/foo/')
+  t.is(URL.pathToFileURL(String.raw`\\SERVER\share\foo`).href, 'file://server/share/foo')
+  t.is(URL.pathToFileURL(String.raw`\\server\share\a#b`).href, 'file://server/share/a%23b')
+  t.is(URL.pathToFileURL(String.raw`\\.\C:\foo`).href, 'file://./C:/foo')
+})
+
+test('pathToFileURL rejects invalid UNC paths', { skip: !isWindows }, (t) => {
+  t.exception(() => URL.pathToFileURL(String.raw`\\server`), /INVALID_ARG_VALUE/)
+  t.exception(() => URL.pathToFileURL(String.raw`\\\share\foo`), /INVALID_ARG_VALUE/)
+  t.exception(() => URL.pathToFileURL(String.raw`\\a b\share`), /INVALID_URL/)
+})
+
+test('pathToFileURL handles namespaced drive paths', { skip: !isWindows }, (t) => {
+  t.is(URL.pathToFileURL(String.raw`\\?\C:\foo\bar`).href, 'file:///C:/foo/bar')
+  t.is(URL.pathToFileURL('\\\\?\\C:\\foo\\bar\\').href, 'file:///C:/foo/bar/')
+  t.is(URL.pathToFileURL(String.raw`\\?\C:\foo\a#b`).href, 'file:///C:/foo/a%23b')
+  t.is(URL.pathToFileURL(String.raw`\\?\C:\..\foo`).href, 'file:///C:/foo')
+  t.is(URL.pathToFileURL(String.raw`\\?\C:`).href, 'file:///C:')
+})
+
+test('pathToFileURL handles namespaced UNC paths', { skip: !isWindows }, (t) => {
+  t.is(URL.pathToFileURL(String.raw`\\?\UNC\server\share\foo`).href, 'file://server/share/foo')
+  t.is(URL.pathToFileURL('\\\\?\\UNC\\server\\share\\foo\\').href, 'file://server/share/foo/')
+  t.is(URL.pathToFileURL('\\\\?\\UNC\\server\\').href, 'file://server/')
+  t.is(URL.pathToFileURL(String.raw`\\?\UNC\\share`).href, 'file:///share')
+})
+
+test('pathToFileURL rejects invalid namespaced UNC paths', { skip: !isWindows }, (t) => {
+  t.exception(() => URL.pathToFileURL(String.raw`\\?\UNC\server`), /INVALID_ARG_VALUE/)
+})
+
+test('pathToFileURL handles other namespaced paths', { skip: !isWindows }, (t) => {
+  t.is(URL.pathToFileURL(String.raw`\\?\unc\server\share\foo`).href, 'file:///unc/server/share/foo')
+  t.is(URL.pathToFileURL(String.raw`\\?\Volume{abc}\foo`).href, 'file:///Volume%7Babc%7D/foo')
+})
