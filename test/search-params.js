@@ -44,6 +44,31 @@ test('construct from string, decodes + and percent together', (t) => {
   t.is(params.get('a b+c'), 'd e+f')
 })
 
+test('construct from string, keeps % that starts no escape', (t) => {
+  const params = new URLSearchParams('a=50%&b=%zz&c=%4&d=%41%&e=%2b%zz+%C3%A6')
+
+  t.is(params.get('a'), '50%')
+  t.is(params.get('b'), '%zz')
+  t.is(params.get('c'), '%4')
+  t.is(params.get('d'), 'A%')
+  t.is(params.get('e'), '+%zz æ')
+})
+
+test('construct from string, replaces invalid UTF-8 with U+FFFD', (t) => {
+  const params = new URLSearchParams(
+    'a=%ff&b=%e2%82&c=%e2%82%ac%ff&d=%ed%a0%80&e=%f0%9f%98%80x%c3&f=%c0%af&g=%f4%90%80%80&h=%f8%e2%82%ac'
+  )
+
+  t.is(params.get('a'), '�')
+  t.is(params.get('b'), '�')
+  t.is(params.get('c'), '€�')
+  t.is(params.get('d'), '���')
+  t.is(params.get('e'), '\u{1f600}x�')
+  t.is(params.get('f'), '��')
+  t.is(params.get('g'), '����')
+  t.is(params.get('h'), '�€')
+})
+
 test('construct from string, value containing =', (t) => {
   const params = new URLSearchParams('foo=bar=baz')
 
