@@ -46,7 +46,7 @@
   },
   "devDependencies": {
     "brittle": "^3.3.2",
-    "cmake-bare": "^1.8.1",
+    "cmake-bare": "^1.13.0",
     "cmake-fetch": "^1.0.0",
     "lunte": "^1.6.0",
     "prettier": "^3.3.3",

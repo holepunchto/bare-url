@@ -5,11 +5,11 @@ find_package(cmake-fetch REQUIRED PATHS node_modules/cmake-fetch)
 
 project(bare_url C)
 
-fetch_package("github:holepunchto/libutf#a1ceca8")
-fetch_package("github:holepunchto/libpunycode#e91ee34")
-fetch_package("github:holepunchto/libnormalize#0e81f65")
-fetch_package("github:holepunchto/libidna#1471406")
-fetch_package("github:holepunchto/liburl#2efedc5")
+fetch_package("github:holepunchto/libutf#a7f9f6b")
+fetch_package("github:holepunchto/libpunycode#35fc8e7")
+fetch_package("github:holepunchto/libnormalize#bf5337f")
+fetch_package("github:holepunchto/libidna#071a545")
+fetch_package("github:holepunchto/liburl#fe905f7")
 
 add_bare_module(bare_url)
 
